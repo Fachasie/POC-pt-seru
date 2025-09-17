@@ -36,7 +36,7 @@ function App() {
                         <li><a>Job Order</a></li>
                         <li><a>Purchase</a></li>
                         <li><a>Inventory</a></li>
-                        <li><a>Pscking List</a></li>
+                        <li><a>Packing List</a></li>
                         <li><a>Dashboard</a></li>
                     </ul>
                 </div>
