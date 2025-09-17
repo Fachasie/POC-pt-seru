@@ -7,9 +7,8 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 const API_URL = 'http://localhost:3001/job_order';
 
-export default function TableList({ handleOpen }) {
+export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
-  const [selectedRow, setSelectedRow] = useState(null); // State untuk data baris yang dipilih
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -61,15 +60,6 @@ const handleExport = () => {
   saveAs(fileData, "job_orders.xlsx");
 };
 
-
-  const handleDetailClick = (jobOrderData) => {
-    setSelectedRow(jobOrderData);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedRow(null);
-  };
-
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -118,7 +108,6 @@ const handleExport = () => {
                     >
                       Detail
                     </button>
-                    <button className="btn btn-secondary">Update</button>
                     <button className="btn btn-accent">Delete</button>
                   </div>
                 </td>
