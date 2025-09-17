@@ -30,8 +30,22 @@ const handleExport = () => {
     return;
   }
 
-  // Convert JSON ke worksheet
-  const worksheet = XLSX.utils.json_to_sheet(jobOrders);
+  // Mapping header supaya lebih rapih
+  const exportData = jobOrders.map((job) => ({
+    "ID": job.id,
+    "Tanggal Form": job.date_form,
+    "No Lambung": job.no_lambung,
+    "Keterangan Equipment": job.keterangan_equipment,
+    "Jenis Pekerjaan": job.jenis_pekerjaan,
+    "Uraian Masalah": job.uraian_masalah,
+    "Tanggal Masuk": job.tanggal_masuk,
+    "Tanggal Keluar": job.tanggal_keluar,
+    "Status Mutasi": job.status_mutasi,
+    "Status": job.status,
+  }));
+
+  // Convert JSON ke worksheet dengan header custom
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
 
   // Buat workbook baru
   const workbook = XLSX.utils.book_new();
@@ -46,6 +60,7 @@ const handleExport = () => {
   const fileData = new Blob([excelBuffer], { type: "application/octet-stream" });
   saveAs(fileData, "job_orders.xlsx");
 };
+
 
   const handleDetailClick = (jobOrderData) => {
     setSelectedRow(jobOrderData);
