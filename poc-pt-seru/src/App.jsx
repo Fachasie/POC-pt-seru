@@ -1,12 +1,27 @@
-import TableList from "./components/TableList"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MdMenu } from "react-icons/md";
 import { IoNotifications } from "react-icons/io5";
-import Pagination from "./components/Pagination";
+import { FaFileExcel } from "react-icons/fa";
+import AppRoutes from './routes/AppRoutes';
+
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') ? localStorage.getItem('theme') : 'light');
 
+  const handleToggleTheme = (e) => {
+    if (e.target.checked) {
+        setTheme('light');
+    } else {
+        setTheme('dark');
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    const localTheme = localStorage.getItem('theme');
+    document.querySelector('html').setAttribute('data-theme', localTheme);
+  }, [theme])
   return (
     <>
       <div className="flex h-screen">
@@ -28,7 +43,7 @@ function App() {
                 </div>
             </div>
 
-            {/* Main content */}
+            {/* Main content Original*/}
             <div className="flex-1 flex flex-col">
                 {/* Navbar */}
                 <div className="navbar bg-base-100 shadow z-10">
@@ -51,7 +66,18 @@ function App() {
                             <li><a>Item 2</a></li>
                         </ul>
                         </div>
-                                            </div>
+                    </div>
+                    {/* Tambahkan Switch di sini */}
+                        <label className="flex cursor-pointer gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+                            <input 
+                            type="checkbox" 
+                            value="synthwave" 
+                            className="toggle theme-controller" 
+                            onChange={handleToggleTheme}
+                            checked={theme === 'light'}
+                            />
+                        </label>
                     <div className="flex-none gap-2">
                             <button className="btn m-1">
                                 <IoNotifications />
@@ -82,13 +108,9 @@ function App() {
                         </div>
                     </div>
                 </div>
-                {/* Main Content */}
+                {/* Main Content Secondary Untuk TableList */}
                 <div className="flex-1 p-4 transition-all duration-300" style={{ marginLeft: sidebarOpen ? '16rem' : '0' }}>
-                    {/* masukan konten utama disini */}
-                    <h1 className="text-center fw-bold">List Job Orders</h1>
-                    <TableList />
-                    <div className="flex justify-center mt-6"><Pagination /></div>
-                    
+                 <AppRoutes />
                 </div>
             </div>
         </div>
