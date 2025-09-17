@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import Pagination from './Pagination';
 import { FaFileExcel } from 'react-icons/fa';
-
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 const API_URL = 'http://localhost:3001/job_order';
 
 export default function TableList({ handleOpen }) {
@@ -23,6 +24,28 @@ export default function TableList({ handleOpen }) {
       console.error("Error fetching users:", error);
     }
   };
+const handleExport = () => {
+  if (!jobOrders || jobOrders.length === 0) {
+    alert("Tidak ada data untuk diexport");
+    return;
+  }
+
+  // Convert JSON ke worksheet
+  const worksheet = XLSX.utils.json_to_sheet(jobOrders);
+
+  // Buat workbook baru
+  const workbook = XLSX.utils.book_new();
+
+  // Tambahkan worksheet ke workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Job Orders");
+
+  // Buat buffer Excel
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+
+  // Simpan file
+  const fileData = new Blob([excelBuffer], { type: "application/octet-stream" });
+  saveAs(fileData, "job_orders.xlsx");
+};
 
   const handleDetailClick = (jobOrderData) => {
     setSelectedRow(jobOrderData);
@@ -38,7 +61,7 @@ export default function TableList({ handleOpen }) {
         <h2 className="text-xl font-bold">Job Order (Head Office)</h2>
         <div className="flex gap-2 items-center">
           <button className="btn btn-primary">Create</button>
-          <button className="btn btn-outline btn-success">Export<FaFileExcel /></button>
+          <button className="btn btn-outline btn-success"onClick={handleExport}>Export<FaFileExcel /></button>
         </div>
       </div>
       <div className="overflow-x-auto mt-10">
