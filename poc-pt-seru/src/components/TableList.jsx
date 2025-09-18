@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Pagination from "./Pagination";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -10,7 +9,10 @@ const API_URL = "http://localhost:3001/job_order";
 export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
   const navigate = useNavigate();
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredJobOrders, setFilteredJobOrders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -19,11 +21,31 @@ export default function TableList() {
     try {
       const response = await axios.get(API_URL);
       setJobOrders(response.data);
+      setFilteredJobOrders(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
     }
   };
-
+  useEffect(() => { // effect for search
+    // This effect handles filtering based on the search query.
+    if (jobOrders.length > 0) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      const filteredData = jobOrders.filter((job) => {
+        // Search across multiple relevant fields for a match.
+        return (
+          String(job.id).includes(lowercasedQuery) ||
+          String(job.date_form).toLowerCase().includes(lowercasedQuery) ||
+          String(job.no_lambung).toLowerCase().includes(lowercasedQuery) ||
+          String(job.keterangan_equipment).toLowerCase().includes(lowercasedQuery) ||
+          String(job.jenis_pekerjaan).toLowerCase().includes(lowercasedQuery) ||
+          String(job.uraian_masalah).toLowerCase().includes(lowercasedQuery) ||
+          String(job.status).toLowerCase().includes(lowercasedQuery)
+        );
+      });
+      setFilteredJobOrders(filteredData);
+      setCurrentPage(1); // Reset to the first page when a new search is performed.
+    }
+  }, [jobOrders, searchQuery]);
   // 1. Definisikan fungsi handleDelete
   const handleDelete = async (id) => {
     // Tambahkan konfirmasi sebelum menghapus
@@ -44,12 +66,12 @@ export default function TableList() {
     navigate("/job-order/create");
   }
   const handleExport = () => {
-    if (!jobOrders || jobOrders.length === 0) {
+    if (!filteredJobOrders || filteredJobOrders.length === 0) {
       alert("Tidak ada data untuk diexport");
       return;
     }
 
-    const exportData = jobOrders.map((job) => ({
+    const exportData = filteredJobOrders.map((job) => ({
       ID: job.id,
       "Tanggal Form": job.date_form,
       "No Lambung": job.no_lambung,
@@ -75,77 +97,133 @@ export default function TableList() {
     saveAs(fileData, "job_orders.xlsx");
   };
 
+  // Pagination state
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredJobOrders.slice(
+      indexOfFirstItem,
+      indexOfLastItem
+    );
+    const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage);
+
+    const handlePageChange = (pageNumber) => {
+      setCurrentPage(pageNumber);
+    };
+
+
   return (
-    <>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Job Order (Head Office)</h2>
-        <div className="flex gap-2 items-center">
-          <button className="btn btn-primary"onClick={handleCreate}>Create</button>
-          <button
-            className="btn btn-outline btn-success"
-            onClick={handleExport}
-          >
-            Export
-            <FaFileExcel />
-          </button>
+    <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-start mb-6 w-full">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Job Order (Head Office)</h2>
+        <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="input input-bordered w-full sm:max-w-xs text-sm rounded-lg"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <button className="btn btn-primary btn-sm rounded-lg" onClick={handleCreate}>
+              Create
+            </button>
+            <button
+              className="btn btn-outline btn-success btn-sm rounded-lg flex items-center gap-1"
+              onClick={handleExport}
+            >
+              <FaFileExcel />
+              Export
+            </button>
+          </div>
         </div>
       </div>
-      <div className="overflow-x-auto mt-10">
-        <table className="table">
-          {/* head */}
-          <thead>
+      <div className="overflow-x-auto shadow-lg rounded-lg">
+        <table className="table w-full bg-white">
+          <thead className="bg-gray-200">
             <tr>
-              <th>Id</th>
-              <th>Job Order</th>
-              <th>No Lambung</th>
-              <th>Keterangan Equipment</th>
-              <th>Jenis Pekerjaan</th>
-              <th>Uraian Masalah</th>
-              <th>Tanggal Masuk</th>
-              <th>Tanggal Keluar</th>
-              <th>Status Mutasi</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Id</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Job Order</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">No Lambung</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Keterangan Equipment</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Jenis Pekerjaan</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Uraian Masalah</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Tanggal Masuk</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Tanggal Keluar</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Status Mutasi</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Status</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Action</th>
             </tr>
           </thead>
           <tbody>
-            {jobOrders.map((jobOrder) => (
-              <tr className="hover" key={jobOrder.id}>
-                <th>{jobOrder.id}</th>
-                <td>{jobOrder.date_form}</td>
-                <td>{jobOrder.no_lambung}</td>
-                <td>{jobOrder.keterangan_equipment}</td>
-                <td>{jobOrder.jenis_pekerjaan}</td>
-                <td>{jobOrder.uraian_masalah}</td>
-                <td>{jobOrder.tanggal_masuk}</td>
-                <td>{jobOrder.tanggal_keluar}</td>
-                <td>{jobOrder.status_mutasi}</td>
-                <td>{jobOrder.status}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="btn btn-warning"
-                      onClick={() => navigate(`/job-order/${jobOrder.id}`)}
-                    >
-                      Detail
-                    </button>
-                    {/* 2. Tambahkan onClick pada tombol Delete */}
-                    <button
-                      className="btn btn-accent"
-                      onClick={() => handleDelete(jobOrder.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+            {currentItems.length > 0 ? (
+              currentItems.map((jobOrder, index) => (
+                <tr className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100 transition-colors duration-200`} key={jobOrder.id}>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.id}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.date_form}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.no_lambung}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.keterangan_equipment}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.jenis_pekerjaan}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.uraian_masalah}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.tanggal_masuk}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.tanggal_keluar}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.status_mutasi}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.status}</td>
+                  <td className="p-3 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-warning btn-sm rounded-lg"
+                        onClick={() => navigate(`/job-order/${jobOrder.id}`)}
+                      >
+                        Detail
+                      </button>
+                      <button
+                        className="btn btn-accent btn-sm rounded-lg"
+                        onClick={() => handleDelete(jobOrder.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="11" className="p-4 text-center text-gray-500">
+                  No job orders found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
-      <div className="flex justify-center mt-6">
-        <Pagination />
-      </div>
-    </>
+      {/* Simple Pagination Component */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6 gap-2">
+          <button
+            className={`btn btn-sm rounded-lg ${currentPage === 1 ? 'btn-disabled' : 'btn-ghost'}`}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          {[...Array(totalPages)].map((_, index) => (
+            <button
+              key={index}
+              className={`btn btn-sm rounded-lg ${currentPage === index + 1 ? 'btn-active' : 'btn-ghost'}`}
+              onClick={() => handlePageChange(index + 1)}
+            >
+              {index + 1}
+            </button>
+          ))}
+          <button
+            className={`btn btn-sm rounded-lg ${currentPage === totalPages ? 'btn-disabled' : 'btn-ghost'}`}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

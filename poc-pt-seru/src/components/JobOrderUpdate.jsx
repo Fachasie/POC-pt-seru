@@ -104,7 +104,7 @@ const JobOrderUpdate = () => {
                     <span className="label-text">Date Form</span>
                   </div>
                   <input
-                    type="text"
+                    type="date"
                     name="date_form"
                     value={formData.date_form}
                     onChange={handleInputChange}
@@ -189,7 +189,7 @@ const JobOrderUpdate = () => {
                     <span className="label-text">Tanggal Masuk</span>
                   </div>
                   <input
-                    type="text"
+                    type="date"
                     name="tanggal_masuk"
                     value={formData.tanggal_masuk}
                     onChange={handleInputChange}
@@ -201,7 +201,7 @@ const JobOrderUpdate = () => {
                     <span className="label-text">Tanggal Keluar</span>
                   </div>
                   <input
-                    type="text"
+                    type="date"
                     name="tanggal_keluar"
                     value={formData.tanggal_keluar}
                     onChange={handleInputChange}
