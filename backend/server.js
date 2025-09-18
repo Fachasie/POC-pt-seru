@@ -1,29 +1,24 @@
 const express = require('express');
 const app = express();
-const pool = require('./config/db');
 const cors = require('cors');
-const { validateJobOrder } = require('./middleware/validator');
-const jobOrderController = require('./controllers/jobOrdersControllers');
+const jobOrderRoutes = require('./routes/jobOrderRoutes');
+const equipmentRoutes = require('./routes/equipmentRoutes');
+const jobTypeRoutes = require('./routes/jobTypeRoutes')
 
 // Middleware
-app.use(express.json());
+app.use(express.json()); 
 app.use(cors());
 
-// Routes
-// Get ALL
-app.get('/api/job-orders', jobOrderController.getJobOrders);
+// Semua rute di jobOrderRoutes akan memiliki endpoint /api/job-orders
+app.use("/api/job-orders", jobOrderRoutes);
 
-// Get By Id
-app.get('/api/job-orders/:id', jobOrderController.getJobOrderById);
+// Semua rute di equipmentRoutes akan memiliki endpoint /api/equipments
+app.use("/api/equipments", equipmentRoutes);
 
-// Post Create
-app.post('/api/job-orders', validateJobOrder, jobOrderController.createJobOrder);
+// Semua rute di equipmentRoutes akan memiliki endpoint /api/job-types
+app.use("/api/job-types", jobTypeRoutes);
 
-// Update
-app.put('/api/job-orders/:id', validateJobOrder, jobOrderController.updateJobOrder);
 
-// Delete
-app.delete('/api/job-orders/:id', jobOrderController.deleteJobOrder);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

@@ -4,11 +4,12 @@ const pool = require('../config/db');
 const getJobOrders = async (req, res) => {
   try {
     const allJobOrders = await pool.query(
-        "SELECT * FROM job_order AS jo JOIN equipments AS eq ON jo.equipment_id = eq.id JOIN job_types AS jt ON jo.job_type_id = jt.id"
+        "SELECT jo.id, jo.project_site, jo.date_form, jo.hm, jo.km, jo.uraian_masalah, jo.nama_operator, jo.tanggal_masuk, jo.tanggal_keluar, jo.status_mutasi, jo.status, eq.no_lambung, eq.keterangan_equipment, jt.jenis_pekerjaan FROM job_order AS jo JOIN equipments AS eq ON jo.equipment_id = eq.id JOIN job_types AS jt ON jo.job_type_id = jt.id"
     );
     res.json(allJobOrders.rows);
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error Gagal Mendapatkan Data");
   }
 };
 
@@ -16,10 +17,18 @@ const getJobOrders = async (req, res) => {
 const getJobOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    const jobOrder = await pool.query("SELECT * FROM job_order WHERE id = $1", [id]);
+     const jobOrder = await pool.query(`
+      SELECT
+        jo.id, jo.project_site, jo.date_form, jo.hm, jo.km, jo.uraian_masalah, jo.nama_operator, jo.tanggal_masuk, jo.tanggal_keluar, jo.status_mutasi, jo.status, eq.no_lambung, eq.keterangan_equipment, jt.jenis_pekerjaan FROM job_order AS jo JOIN equipments AS eq ON jo.equipment_id = eq.id JOIN job_types AS jt ON jo.job_type_id = jt.id
+        WHERE jo.id = $1`, [id]);
+
+    if (jobOrder.rows.length === 0) {
+      return res.status(404).json("Data tidak ditemukan");
+    }
     res.json(jobOrder.rows[0]);
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error Gagal Mendapatkan Data");
   }
 };
 
@@ -41,6 +50,7 @@ const createJobOrder = async (req, res) => {
     res.json(newJobOrder.rows[0]);
   } catch (err) {
     console.error(err.message);
+    res.status(404).send("Gagal Menambahkan Data");
   }
 };
 
@@ -65,6 +75,7 @@ const updateJobOrder = async (req, res) => {
     res.json("Job order was updated!");
   } catch (err) {
     console.error(err.message);
+    res.status(404).send("Gagal Mengupdate Data");
   }
 };
 
@@ -73,9 +84,15 @@ const deleteJobOrder = async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query("DELETE FROM job_order WHERE id = $1", [id]);
+
+    if (deleteJobOrder.rows.length === 0) {
+      return res.status(404).json("Data tidak ditemukan untuk dihapus");
+    }
+
     res.json("Job order was deleted!");
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error");
   }
 };
 

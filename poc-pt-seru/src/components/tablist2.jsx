@@ -173,7 +173,7 @@ export default function TableList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <div className="flex gap-2">
-            <button className="btn btn-primary btn-sm rounded-lg " onClick={handleCreate}>
+            <button className="btn btn-primary btn-sm rounded-lg" onClick={handleCreate}>
               Create
             </button>
             <button
