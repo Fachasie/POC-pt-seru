@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/job_order";
+const API_URL = "http://localhost:3001/api/job-orders";
 
 const JobOrderUpdate = () => {
   const { id } = useParams();

@@ -14,6 +14,19 @@ const validateJobOrder = (req, res, next) => {
   next();
 };
 
+const validateEquipment = (req, res, next) => {
+  const { no_lambung, keterangan_equipment } = req.body;
+
+  // Cek apakah ada field yang kosong atau tidak ada
+  if( !no_lambung || !keterangan_equipment ) {
+    return res.status(400).json({ error: "Semua field harus diisi." });
+  }
+
+  // Jika semua valid, lanjutkan ke controller
+  next();
+}
+
 module.exports = {
   validateJobOrder,
+  validateEquipment,
 };

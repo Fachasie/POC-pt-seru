@@ -4,9 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
 const API_URL = "http://localhost:3001/api/job-orders";
-
 
 export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
@@ -70,14 +68,11 @@ export default function TableList() {
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/${confirmId}`); 
-      const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
-      setJobOrders(updatedJobOrders);
-      console.log(updatedJobOrders)
+      await axios.delete(`${API_URL}/${confirmId}`);
+      setJobOrders(jobOrders.filter((job) => job.id !== confirmId));
+      setFilteredJobOrders(filteredJobOrders.filter((job) => job.id !== confirmId));
       showNotification("Data berhasil dihapus!", false);
     } catch (error) {
-      const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
-      setJobOrders(updatedJobOrders);
       console.error("Error deleting data:", error);
       showNotification("Gagal menghapus data.", false);
     } finally {
@@ -143,13 +138,11 @@ export default function TableList() {
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      {/* Modal for Alerts and Confirmations */}
+    {/* Modal for Alerts and Confirmations */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <p className="text-gray-800 text-lg mb-4 text-center">
-              {modalMessage}
-            </p>
+            <p className="text-gray-800 text-lg mb-4 text-center">{modalMessage}</p>
             <div className="flex justify-center gap-4">
               {isConfirmModal && (
                 <button
@@ -170,10 +163,8 @@ export default function TableList() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start mb-6 w-full">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">
-          Job Order (Head Office)
-        </h2>
-        <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto pr-2">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Job Order (Head Office)</h2>
+        <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search..."
@@ -182,10 +173,7 @@ export default function TableList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <div className="flex gap-2">
-            <button
-              className="btn btn-primary btn-sm rounded-lg "
-              onClick={handleCreate}
-            >
+            <button className="btn btn-primary btn-sm rounded-lg" onClick={handleCreate}>
               Create
             </button>
             <button
@@ -202,78 +190,33 @@ export default function TableList() {
         <table className="table w-full bg-white">
           <thead className="bg-gray-200">
             <tr>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Id
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Job Order
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                No Lambung
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Keterangan Equipment
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Jenis Pekerjaan
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Uraian Masalah
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Tanggal Masuk
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Tanggal Keluar
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Status Mutasi
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Status
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Action
-              </th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Id</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Job Order</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">No Lambung</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Keterangan Equipment</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Jenis Pekerjaan</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Uraian Masalah</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Tanggal Masuk</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Tanggal Keluar</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Status Mutasi</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Status</th>
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">Action</th>
             </tr>
           </thead>
           <tbody>
             {currentItems.length > 0 ? (
               currentItems.map((jobOrder, index) => (
-                <tr
-                  className={`${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-gray-100 transition-colors duration-200`}
-                  key={jobOrder.id}
-                >
+                <tr className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100 transition-colors duration-200`} key={jobOrder.id}>
                   <td className="p-3 text-sm text-gray-700">{jobOrder.id}</td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.date_form}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.no_lambung}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.keterangan_equipment}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.jenis_pekerjaan}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.uraian_masalah}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.tanggal_masuk}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.tanggal_keluar}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.status_mutasi}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.status}
-                  </td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.date_form}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.no_lambung}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.keterangan_equipment}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.jenis_pekerjaan}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.uraian_masalah}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.tanggal_masuk}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.tanggal_keluar}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.status_mutasi}</td>
+                  <td className="p-3 text-sm text-gray-700">{jobOrder.status}</td>
                   <td className="p-3 text-sm text-gray-700">
                     <div className="flex items-center gap-2">
                       <button
@@ -306,9 +249,7 @@ export default function TableList() {
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 gap-2">
           <button
-            className={`btn btn-sm rounded-lg ${
-              currentPage === 1 ? "btn-disabled" : "btn-ghost"
-            }`}
+            className={`btn btn-sm rounded-lg ${currentPage === 1 ? 'btn-disabled' : 'btn-ghost'}`}
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
           >
@@ -317,18 +258,14 @@ export default function TableList() {
           {[...Array(totalPages)].map((_, index) => (
             <button
               key={index}
-              className={`btn btn-sm rounded-lg ${
-                currentPage === index + 1 ? "btn-active" : "btn-ghost"
-              }`}
+              className={`btn btn-sm rounded-lg ${currentPage === index + 1 ? 'btn-active' : 'btn-ghost'}`}
               onClick={() => handlePageChange(index + 1)}
             >
               {index + 1}
             </button>
           ))}
           <button
-            className={`btn btn-sm rounded-lg ${
-              currentPage === totalPages ? "btn-disabled" : "btn-ghost"
-            }`}
+            className={`btn btn-sm rounded-lg ${currentPage === totalPages ? 'btn-disabled' : 'btn-ghost'}`}
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
