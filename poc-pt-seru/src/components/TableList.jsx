@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-const API_URL = "http://localhost:3001/job_order";
+const API_URL = "/api/job_order";
 
 export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
