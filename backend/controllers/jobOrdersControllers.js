@@ -3,13 +3,16 @@ const pool = require('../config/db');
 // GET all job orders
 const getJobOrders = async (req, res) => {
   try {
+
     const allJobOrders = await pool.query(
         "SELECT jo.id, jo.project_site, jo.date_form, jo.hm, jo.km, jo.uraian_masalah, jo.nama_operator, jo.tanggal_masuk, jo.tanggal_keluar, jo.status_mutasi, jo.status, eq.no_lambung, eq.keterangan_equipment, jt.jenis_pekerjaan FROM job_order AS jo JOIN equipments AS eq ON jo.equipment_id = eq.id JOIN job_types AS jt ON jo.job_type_id = jt.id"
     );
     res.json(allJobOrders.rows);
+    
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error Gagal Mendapatkan Data");
+
   }
 };
 
@@ -31,6 +34,7 @@ const getJobOrderById = async (req, res) => {
     res.status(500).send("Server Error Gagal Mendapatkan Data");
   }
 };
+
 
 // CREATE a new job order
 const createJobOrder = async (req, res) => {
