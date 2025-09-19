@@ -68,15 +68,17 @@ export default function TableList() {
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/${confirmId}`);
+      await axios.delete(`${API_URL}/${confirmId}`); 
       const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
       setJobOrders(updatedJobOrders);
+      console.log(updatedJobOrders)
       showNotification("Data berhasil dihapus!", false);
     } catch (error) {
+      const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
+      setJobOrders(updatedJobOrders);
       console.error("Error deleting data:", error);
       showNotification("Gagal menghapus data.", false);
     } finally {
-      window.location.reload();
       closeModal();
     }
   };

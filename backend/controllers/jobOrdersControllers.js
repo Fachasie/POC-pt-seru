@@ -84,11 +84,6 @@ const deleteJobOrder = async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query("DELETE FROM job_order WHERE id = $1", [id]);
-
-    if (deleteJobOrder.rows.length === 0) {
-      return res.status(404).json("Data tidak ditemukan untuk dihapus");
-    }
-
     res.json("Job order was deleted!");
   } catch (err) {
     console.error(err.message);
