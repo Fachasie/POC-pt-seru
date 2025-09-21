@@ -1,32 +1,91 @@
-// JobOrderUpdate.jsx
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/api/job-orders";
+const API_BASE_URL = "http://localhost:3001/api";
+
+// Helper function untuk format tanggal ke YYYY-MM-DDTHH:MM
+const formatDateForInput = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
+  return localISOTime;
+};
 
 const JobOrderUpdate = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { id } = useParams(); // Mengambil ID dari URL
 
+  // State untuk menampung data dari API
+  const [equipments, setEquipments] = useState([]);
+  const [jobTypes, setJobTypes] = useState([]);
+
+  // State untuk form data, diinisialisasi kosong
+  const [formData, setFormData] = useState({
+    project_site: "",
+    equipment_id: "",
+    date_form: "",
+    hm: "",
+    km: "",
+    job_type_id: "",
+    uraian_masalah: "",
+    nama_operator: "",
+    tanggal_masuk: "",
+    tanggal_keluar: "",
+    status_mutasi: "no mutasi",
+    status: "On Progress",
+  });
+
+  // State untuk keterangan equipment (hanya untuk tampilan)
+  const [keteranganEquipment, setKeteranganEquipment] = useState("");
+
+  // Fetch data master (equipments & job types) saat komponen dimuat
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const [equipmentsRes, jobTypesRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/equipments`),
+          axios.get(`${API_BASE_URL}/job-types`),
+        ]);
+        setEquipments(equipmentsRes.data);
+        setJobTypes(jobTypesRes.data);
+      } catch (error) {
+        console.error("Gagal mengambil data master:", error);
+        alert("Gagal memuat data master. Pastikan server backend berjalan.");
+      }
+    };
+    fetchMasterData();
+  }, []);
+
+  // Fetch data Job Order yang akan di-update
   useEffect(() => {
     const fetchJobOrder = async () => {
+      if (!id) return;
       try {
-        const response = await axios.get(`${API_URL}/${id}`);
-        setFormData(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching job order:", err);
-        setError("Gagal memuat data job order.");
-        setLoading(false);
+        const response = await axios.get(`${API_BASE_URL}/job-orders/${id}`);
+        const data = response.data;
+
+        // Format tanggal sebelum dimasukkan ke state
+        setFormData({
+          ...data,
+          date_form: formatDateForInput(data.date_form),
+          tanggal_masuk: formatDateForInput(data.tanggal_masuk),
+          tanggal_keluar: formatDateForInput(data.tanggal_keluar),
+        });
+
+        // Set keterangan equipment untuk ditampilkan
+        setKeteranganEquipment(data.keterangan_equipment || "");
+      } catch (error) {
+        console.error("Gagal mengambil data Job Order:", error);
+        alert("Gagal memuat data Job Order.");
+        navigate("/job-orders");
       }
     };
     fetchJobOrder();
-  }, [id]);
+  }, [id, navigate]);
 
+  // Handler untuk input biasa
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -35,207 +94,268 @@ const JobOrderUpdate = () => {
     });
   };
 
+  // Handler khusus untuk dropdown equipment
+  const handleEquipmentChange = (e) => {
+    const selectedEquipmentId = e.target.value;
+    const selectedEquipment = equipments.find(
+      (eq) => eq.id === parseInt(selectedEquipmentId)
+    );
+
+    setFormData({
+      ...formData,
+      equipment_id: selectedEquipmentId,
+    });
+
+    // Update state keterangan equipment secara terpisah
+    setKeteranganEquipment(
+      selectedEquipment ? selectedEquipment.keterangan_equipment : ""
+    );
+  };
+
+  // Handler untuk submit form update
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API_URL}/${id}`, formData);
+      await axios.put(`${API_BASE_URL}/job-orders/${id}`, formData);
       alert("Job Order berhasil diperbarui!");
-      navigate(`/job-orders`); // Redirect back to the list
+      navigate(`/job-orders`);
     } catch (err) {
       console.error("Error updating job order:", err);
-      alert("Gagal memperbarui Job Order.");
+      alert("Gagal memperbarui Job Order. Periksa kembali isian Anda.");
     }
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-          &larr; Kembali
-        </button>
-      </div>
-      <div className="card bg-base-100 shadow-xl">
-        <form onSubmit={handleUpdate}>
-          <div className="card-body">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold">Edit Job Order</h3>
-              <div className="flex gap-2 items-center">
-                <button type="submit" className="btn btn-secondary">
-                  Update
+    <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-2xl font-bold">Edit Job Order #{id}</h3>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => navigate(-1)}
+          >
+            &larr; Kembali
+          </button>
+        </div>
+        <div className="card bg-base-100 shadow-xl">
+          <form onSubmit={handleUpdate}>
+            <div className="card-body">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Kolom Kiri */}
+                <div>
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Project Site</span>
+                    </div>
+                    <input
+                      type="text"
+                      name="project_site"
+                      value={formData.project_site}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">No Lambung</span>
+                    </div>
+                    <select
+                      name="equipment_id"
+                      value={formData.equipment_id}
+                      onChange={handleEquipmentChange}
+                      className="select select-bordered w-full"
+                      required
+                    >
+                      <option value="" disabled>
+                        Pilih No Lambung
+                      </option>
+                      {equipments.map((eq) => (
+                        <option key={eq.id} value={eq.id}>
+                          {eq.no_lambung}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Keterangan Equipment</span>
+                    </div>
+                    <input
+                      type="text"
+                      name="keterangan_equipment"
+                      value={keteranganEquipment}
+                      className="input input-bordered w-full bg-gray-100"
+                      readOnly
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Date Form</span>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      name="date_form"
+                      value={formData.date_form}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">HM</span>
+                    </div>
+                    <input
+                      type="number"
+                      step="any"
+                      name="hm"
+                      value={formData.hm}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">KM</span>
+                    </div>
+                    <input
+                      type="number"
+                      step="any"
+                      name="km"
+                      value={formData.km}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+                </div>
+
+                {/* Kolom Kanan */}
+                <div>
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Jenis Pekerjaan</span>
+                    </div>
+                    <select
+                      name="job_type_id"
+                      value={formData.job_type_id}
+                      onChange={handleInputChange}
+                      className="select select-bordered w-full"
+                      required
+                    >
+                      <option value="" disabled>
+                        Pilih Jenis Pekerjaan
+                      </option>
+                      {jobTypes.map((jt) => (
+                        <option key={jt.id} value={jt.id}>
+                          {jt.jenis_pekerjaan}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Uraian Masalah</span>
+                    </div>
+                    <textarea
+                      name="uraian_masalah"
+                      value={formData.uraian_masalah}
+                      onChange={handleInputChange}
+                      className="textarea textarea-bordered h-24 w-full"
+                      required
+                    ></textarea>
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Nama Operator</span>
+                    </div>
+                    <input
+                      type="text"
+                      name="nama_operator"
+                      value={formData.nama_operator}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Tanggal Masuk</span>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      name="tanggal_masuk"
+                      value={formData.tanggal_masuk}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                      required
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Tanggal Keluar</span>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      name="tanggal_keluar"
+                      value={formData.tanggal_keluar}
+                      onChange={handleInputChange}
+                      className="input input-bordered w-full"
+                    />
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Status Mutasi</span>
+                    </div>
+                    <select
+                      name="status_mutasi"
+                      value={formData.status_mutasi}
+                      onChange={handleInputChange}
+                      className="select select-bordered w-full"
+                      required
+                    >
+                      <option value="no mutasi">no mutasi</option>
+                      <option value="ada mutasi">ada mutasi</option>
+                    </select>
+                  </label>
+
+                  <label className="form-control w-full">
+                    <div className="label">
+                      <span className="label-text">Status</span>
+                    </div>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="select select-bordered w-full"
+                      required
+                    >
+                      <option value="On Progress">On Progress</option>
+                      <option value="Full Progress">Full Progress</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="card-actions justify-end mt-6">
+                <button type="submit" className="btn btn-primary">
+                  Update Job Order
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Project Site</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="project_site"
-                    value={formData.project_site}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">No Lambung</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="no_lambung"
-                    value={formData.no_lambung}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Date Form</span>
-                  </div>
-                  <input
-                    type="date"
-                    name="date_form"
-                    value={formData.date_form}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Keterangan Equipment</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="keterangan_equipment"
-                    value={formData.keterangan_equipment}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">HM</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="hm"
-                    value={formData.hm}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">KM</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="km"
-                    value={formData.km}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-              </div>
-              <div>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Jenis Pekerjaan</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="jenis_pekerjaan"
-                    value={formData.jenis_pekerjaan}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Uraian Masalah</span>
-                  </div>
-                  <textarea
-                    name="uraian_masalah"
-                    value={formData.uraian_masalah}
-                    onChange={handleInputChange}
-                    className="textarea textarea-bordered h-24 w-full"
-                  ></textarea>
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Nama Operator</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="nama_operator"
-                    value={formData.nama_operator}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Tanggal Masuk</span>
-                  </div>
-                  <input
-                    type="date"
-                    name="tanggal_masuk"
-                    value={formData.tanggal_masuk}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Tanggal Keluar</span>
-                  </div>
-                  <input
-                    type="date"
-                    name="tanggal_keluar"
-                    value={formData.tanggal_keluar}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Status Mutasi</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="status_mutasi"
-                    value={formData.status_mutasi}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">Status</span>
-                  </div>
-                  <input
-                    type="text"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="input input-bordered w-full"
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -24,19 +24,36 @@ const JobOrderDetail = () => {
     fetchJobOrder();
   }, [id, navigate]);
 
-  // PERUBAHAN 1: Memperbaiki fungsi handleDelete
   const handleDelete = async () => {
-    // Gunakan 'id' dari useParams yang sudah ada di scope komponen
     if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
       try {
         await axios.delete(`${API_URL}/${id}`);
         alert("Data berhasil dihapus!");
-        // PERUBAHAN 2: Arahkan pengguna kembali ke halaman daftar setelah berhasil hapus
-        navigate("/job-orders"); // atau navigate("/") sesuai route Anda
+        navigate("/job-orders");
       } catch (error) {
         console.error("Error deleting data:", error);
         alert("Gagal menghapus data.");
       }
+    }
+  };
+
+  // --- FUNGSI BARU UNTUK FORMAT TANGGAL DAN WAKTU ---
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-"; // Cek jika tanggal tidak valid
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      return "-"; // Fallback jika terjadi error
     }
   };
 
@@ -45,88 +62,111 @@ const JobOrderDetail = () => {
   }
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-          &larr; Kembali
-        </button>
-        <div className="flex gap-2 items-center">
+    <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-4">
           <button
-            className="btn btn-secondary"
-            onClick={() => navigate(`/job-order/update/${jobOrder.id}`)}
+            className="btn btn-outline btn-sm"
+            onClick={() => navigate(-1)}
           >
-            Edit
+            &larr; Kembali
           </button>
-          {/* PERUBAHAN 3: Memperbarui cara memanggil handleDelete */}
-          <button className="btn btn-accent" onClick={handleDelete}>
-            Delete
-          </button>
+          <div className="flex gap-2 items-center">
+            <button
+              className="btn btn-warning btn-sm"
+              onClick={() => navigate(`/job-order/update/${jobOrder.id}`)}
+            >
+              Edit
+            </button>
+            <button className="btn btn-error btn-sm" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h3 className="text-2xl font-bold mb-4">Detail Job Order</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ... sisa kode JSX Anda tidak berubah ... */}
-            <div>
-              <p>
-                <strong>ID: </strong>
-                {jobOrder.id}
-              </p>
-              <p>
-                <strong>Project Site: </strong>
-                {jobOrder.project_site}
-              </p>
-              <p>
-                <strong>No Lambung: </strong>
-                {jobOrder.no_lambung}
-              </p>
-              <p>
-                <strong>Date Form: </strong>
-                {jobOrder.date_form}
-              </p>
-              <p>
-                <strong>Keterangan Equipment: </strong>
-                {jobOrder.keterangan_equipment}
-              </p>
-              <p>
-                <strong>HM: </strong>
-                {jobOrder.hm}
-              </p>
-              <p>
-                <strong>KM: </strong>
-                {jobOrder.km}
-              </p>
-            </div>
-            <div>
-              <p>
-                <strong>Jenis Pekerjaan: </strong>
-                {jobOrder.jenis_pekerjaan}
-              </p>
-              <p>
-                <strong>Uraian Masalah: </strong>
-                {jobOrder.uraian_masalah}
-              </p>
-              <p>
-                <strong>Nama Operator: </strong>
-                {jobOrder.nama_operator}
-              </p>
-              <p>
-                <strong>Tanggal Masuk: </strong>
-                {jobOrder.tanggal_masuk}
-              </p>
-              <p>
-                <strong>Tanggal Keluar: </strong>
-                {jobOrder.tanggal_keluar}
-              </p>
-              <p>
-                <strong>Status Mutasi: </strong>
-                {jobOrder.status_mutasi}
-              </p>
-              <p>
-                <strong>Status: </strong>
-                {jobOrder.status}
-              </p>
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h3 className="text-2xl font-bold mb-6 border-b pb-2">
+              Detail Job Order #{jobOrder.id}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Kolom Kiri */}
+              <div>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">Project Site:</strong>
+                  <span>{jobOrder.project_site || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">No Lambung:</strong>
+                  <span>{jobOrder.no_lambung || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">
+                    Keterangan Equipment:
+                  </strong>
+                  <span>{jobOrder.keterangan_equipment || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">Tanggal Form:</strong>
+                  <span>{formatDate(jobOrder.date_form) || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">HM:</strong>
+                  <span>{jobOrder.hm || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">KM:</strong>
+                  <span>{jobOrder.km || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">
+                    Nama Operator:
+                  </strong>
+                  <span>{jobOrder.nama_operator || "-"}</span>
+                </p>
+              </div>
+              {/* Kolom Kanan */}
+              <div>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">
+                    Jenis Pekerjaan:
+                  </strong>
+                  <span>{jobOrder.jenis_pekerjaan || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">
+                    Uraian Masalah:
+                  </strong>
+                  <span className="whitespace-pre-wrap">
+                    {jobOrder.uraian_masalah || "-"}
+                  </span>
+                </p>
+                <p className="mb-2">
+                  {/* --- PERUBAHAN TAMPILAN TANGGAL MASUK --- */}
+                  <strong className="block text-gray-500">
+                    Tanggal Masuk:
+                  </strong>
+                  <span>{formatDate(jobOrder.tanggal_masuk)}</span>
+                </p>
+                <p className="mb-2">
+                  {/* --- PERUBAHAN TAMPILAN TANGGAL KELUAR --- */}
+                  <strong className="block text-gray-500">
+                    Tanggal Keluar:
+                  </strong>
+                  <span>{formatDate(jobOrder.tanggal_keluar)}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">
+                    Status Mutasi:
+                  </strong>
+                  <span>{jobOrder.status_mutasi || "-"}</span>
+                </p>
+                <p className="mb-2">
+                  <strong className="block text-gray-500">Status:</strong>
+                  <span className="font-semibold">
+                    {jobOrder.status || "-"}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaFileExcel } from "react-icons/fa";
@@ -18,12 +18,13 @@ export default function TableList() {
   const [modalMessage, setModalMessage] = useState("");
   const [isConfirmModal, setIsConfirmModal] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
-
-  // --- START: New state for filter and bulk delete ---
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedJobOrders, setSelectedJobOrders] = useState([]);
   const [isBulkDeleteConfirm, setIsBulkDeleteConfirm] = useState(false);
-  // --- END: New state ---
+  const [sortConfig, setSortConfig] = useState({
+    key: "id",
+    direction: "descending",
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -38,18 +39,15 @@ export default function TableList() {
     }
   };
 
-  // --- MODIFIED: Combined useEffect for search and new status filter ---
   useEffect(() => {
     let data = [...jobOrders];
 
-    // 1. Apply status filter
     if (statusFilter !== "All") {
       data = data.filter(
         (job) => String(job.status).toLowerCase() === statusFilter.toLowerCase()
       );
     }
 
-    // 2. Apply search query filter
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       data = data.filter((job) => {
@@ -68,9 +66,39 @@ export default function TableList() {
     }
 
     setFilteredJobOrders(data);
-    setSelectedJobOrders([]); // Clear selection when filters change
-    setCurrentPage(1); // Reset to the first page when a new search or filter is performed.
-  }, [jobOrders, searchQuery, statusFilter]); // Added statusFilter dependency
+    setSelectedJobOrders([]);
+    setCurrentPage(1);
+  }, [jobOrders, searchQuery, statusFilter]);
+
+  const sortedItems = useMemo(() => {
+    let sortableItems = [...filteredJobOrders];
+    if (sortConfig.key !== null) {
+      sortableItems.sort((a, b) => {
+        const valA = a[sortConfig.key];
+        const valB = b[sortConfig.key];
+
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+
+        if (valA < valB) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (valA > valB) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredJobOrders, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
 
   const showNotification = (message, isConfirm = false, id = null) => {
     setModalMessage(message);
@@ -80,7 +108,7 @@ export default function TableList() {
   };
 
   const handleDelete = (id) => {
-    setIsBulkDeleteConfirm(false); // Set mode to single delete
+    setIsBulkDeleteConfirm(false);
     showNotification("Apakah Anda yakin ingin menghapus data ini?", true, id);
   };
 
@@ -98,13 +126,12 @@ export default function TableList() {
     }
   };
 
-  // --- START: New functions for bulk delete ---
   const handleBulkDelete = () => {
     if (selectedJobOrders.length === 0) {
       showNotification("Tidak ada data yang dipilih untuk dihapus.", false);
       return;
     }
-    setIsBulkDeleteConfirm(true); // Set mode to bulk delete
+    setIsBulkDeleteConfirm(true);
     showNotification(
       `Apakah Anda yakin ingin menghapus ${selectedJobOrders.length} data yang dipilih?`,
       true
@@ -134,7 +161,6 @@ export default function TableList() {
     }
   };
 
-  // This function decides which delete action to perform
   const handleConfirmAction = () => {
     if (isBulkDeleteConfirm) {
       confirmBulkDelete();
@@ -142,12 +168,10 @@ export default function TableList() {
       confirmDelete();
     }
   };
-  // --- END: New functions for bulk delete ---
 
-  // --- START: New functions for checkbox selection ---
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const allIds = filteredJobOrders.map((job) => job.id);
+      const allIds = sortedItems.map((job) => job.id);
       setSelectedJobOrders(allIds);
     } else {
       setSelectedJobOrders([]);
@@ -161,26 +185,26 @@ export default function TableList() {
       setSelectedJobOrders((prev) => prev.filter((jobId) => jobId !== id));
     }
   };
-  // --- END: New functions for checkbox selection ---
 
   const closeModal = () => {
     setShowModal(false);
     setModalMessage("");
     setIsConfirmModal(false);
     setConfirmId(null);
-    setIsBulkDeleteConfirm(false); // Reset delete mode
+    setIsBulkDeleteConfirm(false);
   };
 
   const handleCreate = () => {
     navigate("/job-order/create");
   };
+
   const handleExport = () => {
-    if (!filteredJobOrders || filteredJobOrders.length === 0) {
+    if (!sortedItems || sortedItems.length === 0) {
       alert("Tidak ada data untuk diexport");
       return;
     }
 
-    const exportData = filteredJobOrders.map((job) => ({
+    const exportData = sortedItems.map((job) => ({
       ID: job.id,
       "Tanggal Form": job.date_form,
       "No Lambung": job.no_lambung,
@@ -206,22 +230,45 @@ export default function TableList() {
     saveAs(fileData, "job_orders.xlsx");
   };
 
-  // Pagination state
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredJobOrders.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-  const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage);
+  const currentItems = sortedItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
+  const getSortIndicator = (key) => {
+    if (sortConfig.key === key) {
+      return sortConfig.direction === "ascending" ? " ▲" : " ▼";
+    }
+    return null;
+  };
+
+  // --- START: FUNGSI BARU UNTUK FORMAT TANGGAL ---
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // eslint-disable-next-line no-unused-vars
+    } catch (e) {
+      return "-";
+    }
+  };
+  // --- END: FUNGSI BARU UNTUK FORMAT TANGGAL ---
+
   return (
     <div className="p-4 bg-gray-200 min-h-screen">
-      {/* --- MODIFIED: Modal now uses a single handler for confirmation --- */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
@@ -232,7 +279,7 @@ export default function TableList() {
               {isConfirmModal && (
                 <button
                   className="btn btn-error btn-sm rounded-lg"
-                  onClick={handleConfirmAction} // Changed to dynamic handler
+                  onClick={handleConfirmAction}
                 >
                   Ya, Hapus
                 </button>
@@ -252,7 +299,6 @@ export default function TableList() {
           Job Order (Head Office)
         </h2>
         <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto pr-2">
-          {/* --- NEW: Bulk Delete Button --- */}
           {selectedJobOrders.length > 0 && (
             <button
               className="btn btn-error btn-sm rounded-lg"
@@ -261,7 +307,6 @@ export default function TableList() {
               Delete Selected
             </button>
           )}
-          {/* --- NEW: Status Filter Dropdown --- */}
           <select
             className="select select-bordered w-full sm:max-w-xs text-sm rounded-lg"
             value={statusFilter}
@@ -280,7 +325,7 @@ export default function TableList() {
           />
           <div className="flex gap-2">
             <button
-              className="btn btn-primary btn-sm rounded-lg "
+              className="btn btn-primary btn-sm rounded-lg"
               onClick={handleCreate}
             >
               Create
@@ -299,48 +344,76 @@ export default function TableList() {
         <table className="table w-full bg-white">
           <thead className="bg-gray-200">
             <tr>
-              {/* --- NEW: Checkbox in table header --- */}
               <th className="p-3 text-sm font-semibold tracking-wide text-left">
                 <input
                   type="checkbox"
                   className="checkbox checkbox-sm"
                   onChange={handleSelectAll}
                   checked={
-                    filteredJobOrders.length > 0 &&
-                    selectedJobOrders.length === filteredJobOrders.length
+                    sortedItems.length > 0 &&
+                    selectedJobOrders.length === sortedItems.length
                   }
                 />
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Id
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("id")}
+              >
+                Id{getSortIndicator("id")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Job Order
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("date_form")}
+              >
+                Job Order{getSortIndicator("date_form")}
               </th>
-              {/* Other headers remain unchanged */}
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                No Lambung
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("no_lambung")}
+              >
+                No Lambung{getSortIndicator("no_lambung")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Keterangan Equipment
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("keterangan_equipment")}
+              >
+                Keterangan Equipment{getSortIndicator("keterangan_equipment")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Jenis Pekerjaan
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("jenis_pekerjaan")}
+              >
+                Jenis Pekerjaan{getSortIndicator("jenis_pekerjaan")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Uraian Masalah
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("uraian_masalah")}
+              >
+                Uraian Masalah{getSortIndicator("uraian_masalah")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Tanggal Masuk
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("tanggal_masuk")}
+              >
+                Tanggal Masuk{getSortIndicator("tanggal_masuk")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Tanggal Keluar
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("tanggal_keluar")}
+              >
+                Tanggal Keluar{getSortIndicator("tanggal_keluar")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Status Mutasi
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("status_mutasi")}
+              >
+                Status Mutasi{getSortIndicator("status_mutasi")}
               </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Status
+              <th
+                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
+                onClick={() => requestSort("status")}
+              >
+                Status{getSortIndicator("status")}
               </th>
               <th className="p-3 text-sm font-semibold tracking-wide text-left">
                 Action
@@ -356,7 +429,6 @@ export default function TableList() {
                   } hover:bg-gray-100 transition-colors duration-200`}
                   key={jobOrder.id}
                 >
-                  {/* --- NEW: Checkbox in each table row --- */}
                   <td className="p-3 text-sm text-gray-700">
                     <input
                       type="checkbox"
@@ -367,7 +439,7 @@ export default function TableList() {
                   </td>
                   <td className="p-3 text-sm text-gray-700">{jobOrder.id}</td>
                   <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.date_form}
+                    {formatDate(jobOrder.date_form)}
                   </td>
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.no_lambung}
@@ -381,12 +453,14 @@ export default function TableList() {
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.uraian_masalah}
                   </td>
+                  {/* --- START: PERUBAHAN TAMPILAN TANGGAL --- */}
                   <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.tanggal_masuk}
+                    {formatDate(jobOrder.tanggal_masuk)}
                   </td>
                   <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.tanggal_keluar}
+                    {formatDate(jobOrder.tanggal_keluar)}
                   </td>
+                  {/* --- END: PERUBAHAN TAMPILAN TANGGAL --- */}
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.status_mutasi}
                   </td>
@@ -421,7 +495,6 @@ export default function TableList() {
           </tbody>
         </table>
       </div>
-      {/* Pagination remains unchanged */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 gap-2">
           <button
