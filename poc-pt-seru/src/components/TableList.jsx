@@ -7,7 +7,6 @@ import { saveAs } from "file-saver";
 
 const API_URL = "http://localhost:3001/api/job-orders";
 
-
 export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
   const navigate = useNavigate();
@@ -19,7 +18,13 @@ export default function TableList() {
   const [modalMessage, setModalMessage] = useState("");
   const [isConfirmModal, setIsConfirmModal] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
-  
+
+  // --- START: New state for filter and bulk delete ---
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedJobOrders, setSelectedJobOrders] = useState([]);
+  const [isBulkDeleteConfirm, setIsBulkDeleteConfirm] = useState(false);
+  // --- END: New state ---
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -28,35 +33,45 @@ export default function TableList() {
     try {
       const response = await axios.get(API_URL);
       setJobOrders(response.data);
-      setFilteredJobOrders(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
     }
   };
 
+  // --- MODIFIED: Combined useEffect for search and new status filter ---
   useEffect(() => {
-    // This effect handles filtering based on the search query.
-    if (jobOrders.length > 0) {
+    let data = [...jobOrders];
+
+    // 1. Apply status filter
+    if (statusFilter !== "All") {
+      data = data.filter(
+        (job) => String(job.status).toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+
+    // 2. Apply search query filter
+    if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
-      const filteredData = jobOrders.filter((job) => {
-        // Search across multiple relevant fields for a match.
-        // These fields are returned from the JOIN query in the backend.
+      data = data.filter((job) => {
         return (
           String(job.id).includes(lowercasedQuery) ||
           String(job.date_form).toLowerCase().includes(lowercasedQuery) ||
           String(job.no_lambung).toLowerCase().includes(lowercasedQuery) ||
-          String(job.keterangan_equipment).toLowerCase().includes(lowercasedQuery) ||
+          String(job.keterangan_equipment)
+            .toLowerCase()
+            .includes(lowercasedQuery) ||
           String(job.jenis_pekerjaan).toLowerCase().includes(lowercasedQuery) ||
           String(job.uraian_masalah).toLowerCase().includes(lowercasedQuery) ||
           String(job.status).toLowerCase().includes(lowercasedQuery)
         );
       });
-      setFilteredJobOrders(filteredData);
-      setCurrentPage(1); // Reset to the first page when a new search is performed.
     }
-  }, [jobOrders, searchQuery]);
 
-  // Fungsi untuk menampilkan notifikasi atau konfirmasi
+    setFilteredJobOrders(data);
+    setSelectedJobOrders([]); // Clear selection when filters change
+    setCurrentPage(1); // Reset to the first page when a new search or filter is performed.
+  }, [jobOrders, searchQuery, statusFilter]); // Added statusFilter dependency
+
   const showNotification = (message, isConfirm = false, id = null) => {
     setModalMessage(message);
     setIsConfirmModal(isConfirm);
@@ -64,20 +79,18 @@ export default function TableList() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
+    setIsBulkDeleteConfirm(false); // Set mode to single delete
     showNotification("Apakah Anda yakin ingin menghapus data ini?", true, id);
   };
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_URL}/${confirmId}`); 
+      await axios.delete(`${API_URL}/${confirmId}`);
       const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
       setJobOrders(updatedJobOrders);
-      console.log(updatedJobOrders)
       showNotification("Data berhasil dihapus!", false);
     } catch (error) {
-      const updatedJobOrders = jobOrders.filter((job) => job.id !== confirmId);
-      setJobOrders(updatedJobOrders);
       console.error("Error deleting data:", error);
       showNotification("Gagal menghapus data.", false);
     } finally {
@@ -85,16 +98,82 @@ export default function TableList() {
     }
   };
 
+  // --- START: New functions for bulk delete ---
+  const handleBulkDelete = () => {
+    if (selectedJobOrders.length === 0) {
+      showNotification("Tidak ada data yang dipilih untuk dihapus.", false);
+      return;
+    }
+    setIsBulkDeleteConfirm(true); // Set mode to bulk delete
+    showNotification(
+      `Apakah Anda yakin ingin menghapus ${selectedJobOrders.length} data yang dipilih?`,
+      true
+    );
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      const deletePromises = selectedJobOrders.map((id) =>
+        axios.delete(`${API_URL}/${id}`)
+      );
+      await Promise.all(deletePromises);
+
+      const updatedJobOrders = jobOrders.filter(
+        (job) => !selectedJobOrders.includes(job.id)
+      );
+      setJobOrders(updatedJobOrders);
+      showNotification(
+        `${selectedJobOrders.length} data berhasil dihapus!`,
+        false
+      );
+    } catch (error) {
+      console.error("Error deleting multiple data:", error);
+      showNotification("Gagal menghapus beberapa data.", false);
+    } finally {
+      closeModal();
+    }
+  };
+
+  // This function decides which delete action to perform
+  const handleConfirmAction = () => {
+    if (isBulkDeleteConfirm) {
+      confirmBulkDelete();
+    } else {
+      confirmDelete();
+    }
+  };
+  // --- END: New functions for bulk delete ---
+
+  // --- START: New functions for checkbox selection ---
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = filteredJobOrders.map((job) => job.id);
+      setSelectedJobOrders(allIds);
+    } else {
+      setSelectedJobOrders([]);
+    }
+  };
+
+  const handleSelectOne = (e, id) => {
+    if (e.target.checked) {
+      setSelectedJobOrders((prev) => [...prev, id]);
+    } else {
+      setSelectedJobOrders((prev) => prev.filter((jobId) => jobId !== id));
+    }
+  };
+  // --- END: New functions for checkbox selection ---
+
   const closeModal = () => {
     setShowModal(false);
     setModalMessage("");
     setIsConfirmModal(false);
     setConfirmId(null);
+    setIsBulkDeleteConfirm(false); // Reset delete mode
   };
 
   const handleCreate = () => {
     navigate("/job-order/create");
-  }
+  };
   const handleExport = () => {
     if (!filteredJobOrders || filteredJobOrders.length === 0) {
       alert("Tidak ada data untuk diexport");
@@ -128,22 +207,21 @@ export default function TableList() {
   };
 
   // Pagination state
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredJobOrders.slice(
-      indexOfFirstItem,
-      indexOfLastItem
-    );
-    const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredJobOrders.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage);
 
-    const handlePageChange = (pageNumber) => {
-      setCurrentPage(pageNumber);
-    };
-
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   return (
     <div className="p-4 bg-gray-200 min-h-screen">
-      {/* Modal for Alerts and Confirmations */}
+      {/* --- MODIFIED: Modal now uses a single handler for confirmation --- */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
@@ -154,7 +232,7 @@ export default function TableList() {
               {isConfirmModal && (
                 <button
                   className="btn btn-error btn-sm rounded-lg"
-                  onClick={confirmDelete}
+                  onClick={handleConfirmAction} // Changed to dynamic handler
                 >
                   Ya, Hapus
                 </button>
@@ -174,6 +252,25 @@ export default function TableList() {
           Job Order (Head Office)
         </h2>
         <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto pr-2">
+          {/* --- NEW: Bulk Delete Button --- */}
+          {selectedJobOrders.length > 0 && (
+            <button
+              className="btn btn-error btn-sm rounded-lg"
+              onClick={handleBulkDelete}
+            >
+              Delete Selected
+            </button>
+          )}
+          {/* --- NEW: Status Filter Dropdown --- */}
+          <select
+            className="select select-bordered w-full sm:max-w-xs text-sm rounded-lg"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="All">All Status</option>
+            <option value="On Progress">On Progress</option>
+            <option value="Full progress">Full Progress</option>
+          </select>
           <input
             type="text"
             placeholder="Search..."
@@ -202,12 +299,25 @@ export default function TableList() {
         <table className="table w-full bg-white">
           <thead className="bg-gray-200">
             <tr>
+              {/* --- NEW: Checkbox in table header --- */}
+              <th className="p-3 text-sm font-semibold tracking-wide text-left">
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm"
+                  onChange={handleSelectAll}
+                  checked={
+                    filteredJobOrders.length > 0 &&
+                    selectedJobOrders.length === filteredJobOrders.length
+                  }
+                />
+              </th>
               <th className="p-3 text-sm font-semibold tracking-wide text-left">
                 Id
               </th>
               <th className="p-3 text-sm font-semibold tracking-wide text-left">
                 Job Order
               </th>
+              {/* Other headers remain unchanged */}
               <th className="p-3 text-sm font-semibold tracking-wide text-left">
                 No Lambung
               </th>
@@ -246,6 +356,15 @@ export default function TableList() {
                   } hover:bg-gray-100 transition-colors duration-200`}
                   key={jobOrder.id}
                 >
+                  {/* --- NEW: Checkbox in each table row --- */}
+                  <td className="p-3 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={selectedJobOrders.includes(jobOrder.id)}
+                      onChange={(e) => handleSelectOne(e, jobOrder.id)}
+                    />
+                  </td>
                   <td className="p-3 text-sm text-gray-700">{jobOrder.id}</td>
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.date_form}
@@ -294,7 +413,7 @@ export default function TableList() {
               ))
             ) : (
               <tr>
-                <td colSpan="11" className="p-4 text-center text-gray-500">
+                <td colSpan="12" className="p-4 text-center text-gray-500">
                   No job orders found.
                 </td>
               </tr>
@@ -302,7 +421,7 @@ export default function TableList() {
           </tbody>
         </table>
       </div>
-      {/* Simple Pagination Component */}
+      {/* Pagination remains unchanged */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 gap-2">
           <button
