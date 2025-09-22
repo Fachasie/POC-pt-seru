@@ -268,7 +268,7 @@ export default function TableList() {
   // --- END: FUNGSI BARU UNTUK FORMAT TANGGAL ---
 
   return (
-    <div className="p-4 bg-gray-200 min-h-screen">
+    <div className="p-4 bg-gray-100 min-h-screen">
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
