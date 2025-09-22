@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // Impor useRef
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
@@ -15,8 +15,10 @@ const formatDateForInput = (dateString) => {
 
 const JobOrderUpdate = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Mengambil ID dari URL
+  const { id } = useParams();
+  const modalRef = useRef(null); // Ref untuk dialog modal
 
+  // ... (state dan useEffect tidak berubah) ...
   // State untuk menampung data dari API
   const [equipments, setEquipments] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
@@ -41,54 +43,41 @@ const JobOrderUpdate = () => {
   const [keteranganEquipment, setKeteranganEquipment] = useState("");
 
   // Fetch data master (equipments & job types) saat komponen dimuat
-useEffect(() => {
-  const fetchData = async () => {
-    // Jangan jalankan jika tidak ada ID
-    if (!id) return;
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
 
-    try {
-      // Jalankan semua request API secara bersamaan
-      const [equipmentsRes, jobTypesRes, jobOrderRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/equipments`),
-        axios.get(`${API_BASE_URL}/job-types`),
-        axios.get(`${API_BASE_URL}/job-orders/${id}`),
-      ]);
+      try {
+        const [equipmentsRes, jobTypesRes, jobOrderRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/equipments`),
+          axios.get(`${API_BASE_URL}/job-types`),
+          axios.get(`${API_BASE_URL}/job-orders/${id}`),
+        ]);
 
-      // 1. Set state untuk master data (dropdown options)
-      setEquipments(equipmentsRes.data);
-      setJobTypes(jobTypesRes.data);
+        setEquipments(equipmentsRes.data);
+        setJobTypes(jobTypesRes.data);
+        const jobOrderData = jobOrderRes.data;
 
-      // 2. Ambil data job order yang spesifik
-     const jobOrderData = jobOrderRes.data;
+        setFormData({
+          ...jobOrderData,
+          equipment_id: String(jobOrderData.equipment_id),
+          job_type_id: String(jobOrderData.job_type_id),
+          date_form: formatDateForInput(jobOrderData.date_form),
+          tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
+          tanggal_keluar: formatDateForInput(jobOrderData.tanggal_keluar),
+        });
 
-     // 3. Set state untuk form, PASTIKAN ID MENJADI STRING
-     setFormData({
-       ...jobOrderData,
-       // ---- PERUBAHAN DI SINI ----
-       equipment_id: String(jobOrderData.equipment_id), // Paksa jadi String
-       job_type_id: String(jobOrderData.job_type_id), // Paksa jadi String
-       // --------------------------
-       date_form: formatDateForInput(jobOrderData.date_form),
-       tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
-       tanggal_keluar: formatDateForInput(jobOrderData.tanggal_keluar),
-     });
+        setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+        navigate("/job-orders");
+      }
+    };
 
-     // 4. Set keterangan equipment untuk ditampilkan
-     setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
+    fetchData();
+  }, [id, navigate]);
 
-      // 4. Set keterangan equipment untuk ditampilkan
-      setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
-    } catch (error) {
-      console.error("Gagal mengambil data:", error);
-      alert("Gagal memuat data untuk halaman edit. Mengarahkan kembali...");
-      navigate("/job-orders");
-    }
-  };
-
-  fetchData();
-}, [id, navigate]);
-
-  // Handler untuk input biasa
+  // ... (handleInputChange dan handleEquipmentChange tidak berubah) ...
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -97,27 +86,33 @@ useEffect(() => {
     });
   };
 
-  // Handler khusus untuk dropdown equipment
   const handleEquipmentChange = (e) => {
     const selectedEquipmentId = e.target.value;
     const selectedEquipment = equipments.find(
       (eq) => eq.id === parseInt(selectedEquipmentId)
     );
-
     setFormData({
       ...formData,
       equipment_id: selectedEquipmentId,
     });
-
-    // Update state keterangan equipment secara terpisah
     setKeteranganEquipment(
       selectedEquipment ? selectedEquipment.keterangan_equipment : ""
     );
   };
-
+  
   // Handler untuk submit form update
   const handleUpdate = async (e) => {
     e.preventDefault();
+
+    // --- BLOK VALIDASI TANGGAL DIPERBARUI ---
+    const { tanggal_masuk, tanggal_keluar } = formData;
+    if (tanggal_keluar && new Date(tanggal_keluar) < new Date(tanggal_masuk)) {
+      // Tampilkan modal, bukan alert
+      modalRef.current.showModal();
+      return;
+    }
+    // --- AKHIR BLOK VALIDASI ---
+
     try {
       await axios.put(`${API_BASE_URL}/job-orders/${id}`, formData);
       alert("Job Order berhasil diperbarui!");
@@ -130,6 +125,35 @@ useEffect(() => {
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
+      {/* --- KOMPONEN MODAL DITAMBAHKAN DI SINI --- */}
+      <dialog ref={modalRef} className="modal">
+        <div className="modal-box">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6 text-error mx-auto mb-2"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="font-bold text-lg text-center">Update JO Gagal!</h3>
+          <p className="py-4 text-center">
+            Tanggal Keluar tidak boleh lebih awal dari Tanggal Masuk.
+          </p>
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn btn-primary mx-auto">Tutup</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+      {/* --- AKHIR KOMPONEN MODAL --- */}
+
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-2xl font-bold">Edit Job Order #{id}</h3>
@@ -142,6 +166,7 @@ useEffect(() => {
         </div>
         <div className="card bg-base-100 shadow-xl">
           <form onSubmit={handleUpdate}>
+            {/* ... isi form tidak berubah ... */}
             <div className="card-body">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Kolom Kiri */}

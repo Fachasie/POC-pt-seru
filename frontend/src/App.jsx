@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { MdMenu } from "react-icons/md";
-import { IoNotifications } from "react-icons/io5";
 import AppRoutes from './routes/AppRoutes';
 
 

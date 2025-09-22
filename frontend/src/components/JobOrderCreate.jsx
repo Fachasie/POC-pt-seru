@@ -1,5 +1,5 @@
 // JobOrderCreate.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -8,7 +8,6 @@ const API_BASE_URL = "http://localhost:3001/api";
 // Helper function untuk mendapatkan waktu lokal saat ini dalam format YYYY-MM-DDTHH:MM
 const getCurrentDateTimeLocal = () => {
   const now = new Date();
-  // Mengimbangi timezone agar yang ditampilkan adalah waktu lokal, bukan UTC
   const tzOffset = now.getTimezoneOffset() * 60000;
   const localISOTime = new Date(now - tzOffset).toISOString().slice(0, 16);
   return localISOTime;
@@ -16,6 +15,8 @@ const getCurrentDateTimeLocal = () => {
 
 const JobOrderCreate = () => {
   const navigate = useNavigate();
+  const modalRef = useRef(null); // Modal untuk error tanggal
+  const successModalRef = useRef(null); // Modal untuk sukses
 
   // State untuk menampung data dari API
   const [equipments, setEquipments] = useState([]);
@@ -25,22 +26,22 @@ const JobOrderCreate = () => {
   const [formData, setFormData] = useState({
     project_site: "",
     equipment_id: "",
-    date_form: getCurrentDateTimeLocal(), // Otomatis terisi waktu sekarang
+    date_form: getCurrentDateTimeLocal(),
     hm: "",
     km: "",
     job_type_id: "",
     uraian_masalah: "",
     nama_operator: "",
-    tanggal_masuk: getCurrentDateTimeLocal(), // Otomatis terisi waktu sekarang
-    tanggal_keluar: "", // Dikosongkan
-    status_mutasi: "no mutasi", // Nilai default
-    status: "On Progress", // Nilai default
+    tanggal_masuk: getCurrentDateTimeLocal(),
+    tanggal_keluar: "",
+    status_mutasi: "no mutasi",
+    status: "On Progress",
   });
 
   // State untuk keterangan equipment (hanya untuk tampilan)
   const [keteranganEquipment, setKeteranganEquipment] = useState("");
 
-  // Fetch data untuk dropdown saat komponen dimuat
+  // Fetch data untuk dropdown
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,7 +53,6 @@ const JobOrderCreate = () => {
         setJobTypes(jobTypesRes.data);
       } catch (error) {
         console.error("Gagal mengambil data untuk form:", error);
-        alert("Gagal memuat data master. Pastikan server backend berjalan.");
       }
     };
     fetchData();
@@ -73,13 +73,10 @@ const JobOrderCreate = () => {
     const selectedEquipment = equipments.find(
       (eq) => eq.id === parseInt(selectedEquipmentId)
     );
-
     setFormData({
       ...formData,
       equipment_id: selectedEquipmentId,
     });
-
-    // Update state keterangan equipment secara terpisah
     setKeteranganEquipment(
       selectedEquipment ? selectedEquipment.keterangan_equipment : ""
     );
@@ -88,10 +85,24 @@ const JobOrderCreate = () => {
   // Handler untuk submit form
   const handleCreate = async (e) => {
     e.preventDefault();
+
+    // --- BLOK VALIDASI TANGGAL DIPERBARUI ---
+    const { tanggal_masuk, tanggal_keluar } = formData;
+    if (tanggal_keluar && new Date(tanggal_keluar) < new Date(tanggal_masuk)) {
+      // Tampilkan modal, bukan alert
+      modalRef.current.showModal(); 
+      return; 
+    }
+    // --- AKHIR BLOK VALIDASI ---
+
     try {
       await axios.post(`${API_BASE_URL}/job-orders`, formData);
-      alert("Job Order berhasil dibuat!");
-      navigate(`/job-orders`);
+      // alert("Job Order berhasil dibuat!");
+      successModalRef.current.showModal();
+      setTimeout(() => {
+        successModalRef.current.close();
+        navigate(`/job-orders`);
+      }, 1500);
     } catch (err) {
       console.error("Error creating job order:", err);
       alert("Gagal membuat Job Order. Periksa kembali isian Anda.");
@@ -100,6 +111,61 @@ const JobOrderCreate = () => {
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
+      {/* Modal Error Tanggal */}
+      <dialog ref={modalRef} className="modal">
+        <div className="modal-box">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6 text-error mx-auto mb-2"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="font-bold text-lg text-center">Validasi Gagal!</h3>
+          <p className="py-4 text-center">
+            Tanggal Keluar tidak boleh lebih awal dari Tanggal Masuk.
+          </p>
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn btn-primary mx-auto">Tutup</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+      {/* Modal Sukses */}
+      <dialog ref={successModalRef} className="modal">
+        <div className="modal-box">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6 text-success mx-auto mb-2"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          <h3 className="font-bold text-lg text-center">Berhasil!</h3>
+          <p className="py-4 text-center">
+            Job Order berhasil dibuat!
+          </p>
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn btn-primary mx-auto" onClick={() => navigate(`/job-orders`)}>Tutup</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-2xl font-bold">Buat Job Order Baru</h3>
@@ -112,6 +178,7 @@ const JobOrderCreate = () => {
         </div>
         <div className="card bg-base-100 shadow-xl">
           <form onSubmit={handleCreate}>
+            {/* ...isi form tidak berubah... */}
             <div className="card-body">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Kolom Kiri */}
@@ -169,7 +236,6 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Date Form</span>
                     </div>
-                    {/* --- PERUBAHAN INPUT TANGGAL --- */}
                     <input
                       type="datetime-local"
                       name="date_form"
@@ -266,7 +332,6 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Tanggal Masuk</span>
                     </div>
-                    {/* --- PERUBAHAN INPUT TANGGAL --- */}
                     <input
                       type="datetime-local"
                       name="tanggal_masuk"
@@ -281,7 +346,6 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Tanggal Keluar</span>
                     </div>
-                    {/* --- PERUBAHAN INPUT TANGGAL --- */}
                     <input
                       type="datetime-local"
                       name="tanggal_keluar"
@@ -295,7 +359,6 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Status Mutasi</span>
                     </div>
-                    {/* --- PERUBAHAN JADI DROPDOWN --- */}
                     <select
                       name="status_mutasi"
                       value={formData.status_mutasi}
@@ -303,8 +366,8 @@ const JobOrderCreate = () => {
                       className="select select-bordered w-full"
                       required
                     >
-                      <option value="Internal">no mutasi</option>
-                      <option value="External">ada mutasi</option>
+                      <option value="no mutasi">no mutasi</option>
+                      <option value="ada mutasi">ada mutasi</option>
                     </select>
                   </label>
 
@@ -312,7 +375,6 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Status</span>
                     </div>
-                    {/* --- PERUBAHAN JADI DROPDOWN --- */}
                     <select
                       name="status"
                       value={formData.status}
