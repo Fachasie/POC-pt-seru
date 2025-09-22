@@ -1,13 +1,15 @@
 // JobOrderCreate.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import NotificationModal from "./NotificationModal";
 
 const API_BASE_URL = "http://localhost:3001/api";
 
 // Helper function untuk mendapatkan waktu lokal saat ini dalam format YYYY-MM-DDTHH:MM
 const getCurrentDateTimeLocal = () => {
   const now = new Date();
+  // Mengimbangi timezone agar yang ditampilkan adalah waktu lokal, bukan UTC
   const tzOffset = now.getTimezoneOffset() * 60000;
   const localISOTime = new Date(now - tzOffset).toISOString().slice(0, 16);
   return localISOTime;
@@ -15,8 +17,6 @@ const getCurrentDateTimeLocal = () => {
 
 const JobOrderCreate = () => {
   const navigate = useNavigate();
-  const modalRef = useRef(null); // Modal untuk error tanggal
-  const successModalRef = useRef(null); // Modal untuk sukses
 
   // State untuk menampung data dari API
   const [equipments, setEquipments] = useState([]);
@@ -26,22 +26,54 @@ const JobOrderCreate = () => {
   const [formData, setFormData] = useState({
     project_site: "",
     equipment_id: "",
-    date_form: getCurrentDateTimeLocal(),
+    date_form: getCurrentDateTimeLocal(), // Otomatis terisi waktu sekarang
     hm: "",
     km: "",
     job_type_id: "",
     uraian_masalah: "",
     nama_operator: "",
-    tanggal_masuk: getCurrentDateTimeLocal(),
-    tanggal_keluar: "",
-    status_mutasi: "no mutasi",
-    status: "On Progress",
+    tanggal_masuk: getCurrentDateTimeLocal(), // Otomatis terisi waktu sekarang
+    tanggal_keluar: "", // Dikosongkan
+    status_mutasi: "no mutasi", // Nilai default
+    status: "On Progress", // Nilai default
   });
 
   // State untuk keterangan equipment (hanya untuk tampilan)
   const [keteranganEquipment, setKeteranganEquipment] = useState("");
 
-  // Fetch data untuk dropdown
+  // State untuk modal notification
+  const [modal, setModal] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: null
+  });
+
+  // Helper function untuk menampilkan modal
+  const showModal = (type, title, message, onConfirm = null) => {
+    setModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onConfirm
+    });
+  };
+
+  // Helper function untuk menutup modal
+  const closeModal = () => {
+    setModal(prev => ({
+      ...prev,
+      isOpen: false
+    }));
+    // Execute onConfirm callback if exists
+    if (modal.onConfirm) {
+      modal.onConfirm();
+    }
+  };
+
+  // Fetch data untuk dropdown saat komponen dimuat
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -53,6 +85,11 @@ const JobOrderCreate = () => {
         setJobTypes(jobTypesRes.data);
       } catch (error) {
         console.error("Gagal mengambil data untuk form:", error);
+        showModal(
+          "error",
+          "Gagal Memuat Data",
+          "Gagal memuat data master. Pastikan server backend berjalan."
+        );
       }
     };
     fetchData();
@@ -73,99 +110,74 @@ const JobOrderCreate = () => {
     const selectedEquipment = equipments.find(
       (eq) => eq.id === parseInt(selectedEquipmentId)
     );
+
     setFormData({
       ...formData,
       equipment_id: selectedEquipmentId,
     });
+
+    // Update state keterangan equipment secara terpisah
     setKeteranganEquipment(
       selectedEquipment ? selectedEquipment.keterangan_equipment : ""
     );
+  };
+
+  // Helper: validasi tanggal (tanggal_keluar harus >= tanggal_masuk jika diisi)
+  const validateDates = ({ tanggal_masuk, tanggal_keluar }) => {
+    if (!tanggal_masuk) return { ok: true };
+    if (!tanggal_keluar) return { ok: true };
+    const masuk = new Date(tanggal_masuk);
+    const keluar = new Date(tanggal_keluar);
+    if (isNaN(masuk.getTime()) || isNaN(keluar.getTime())) {
+      return { ok: false, message: "Format tanggal tidak valid." };
+    }
+    if (keluar.getTime() < masuk.getTime()) {
+      return {
+        ok: false,
+        message: "Tanggal Keluar tidak bisa sebelum Tanggal Masuk.",
+      };
+    }
+    return { ok: true };
   };
 
   // Handler untuk submit form
   const handleCreate = async (e) => {
     e.preventDefault();
 
-    // --- BLOK VALIDASI TANGGAL DIPERBARUI ---
-    const { tanggal_masuk, tanggal_keluar } = formData;
-    if (tanggal_keluar && new Date(tanggal_keluar) < new Date(tanggal_masuk)) {
-      // Tampilkan modal, bukan alert
-      modalRef.current.showModal(); 
-      return; 
+    // validasi tanggal sebelum submit
+    const validation = validateDates({
+      tanggal_masuk: formData.tanggal_masuk,
+      tanggal_keluar: formData.tanggal_keluar,
+    });
+    if (!validation.ok) {
+      showModal(
+        "error",
+        "Validasi Gagal",
+        `Gagal membuat Job Order. ${validation.message}`
+      );
+      return;
     }
-    // --- AKHIR BLOK VALIDASI ---
 
     try {
       await axios.post(`${API_BASE_URL}/job-orders`, formData);
-      // alert("Job Order berhasil dibuat!");
-      successModalRef.current.showModal();
-      setTimeout(() => {
-        successModalRef.current.close();
-        navigate(`/job-orders`);
-      }, 1500);
+      showModal(
+        "success",
+        "Berhasil!",
+        "Job Order berhasil dibuat!",
+        () => navigate(`/job-orders`)
+      );
     } catch (err) {
       console.error("Error creating job order:", err);
-      alert("Gagal membuat Job Order. Periksa kembali isian Anda.");
+      showModal(
+        "error",
+        "Gagal Membuat Job Order",
+        "Gagal membuat Job Order. Periksa kembali isian Anda."
+      );
     }
   };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      {/* Modal Error Tanggal */}
-      <dialog ref={modalRef} className="modal">
-        <div className="modal-box">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6 text-error mx-auto mb-2"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <h3 className="font-bold text-lg text-center">Validasi Gagal!</h3>
-          <p className="py-4 text-center">
-            Tanggal Keluar tidak boleh lebih awal dari Tanggal Masuk.
-          </p>
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn btn-primary mx-auto">Tutup</button>
-            </form>
-          </div>
-        </div>
-      </dialog>
-      {/* Modal Sukses */}
-      <dialog ref={successModalRef} className="modal">
-        <div className="modal-box">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6 text-success mx-auto mb-2"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          <h3 className="font-bold text-lg text-center">Berhasil!</h3>
-          <p className="py-4 text-center">
-            Job Order berhasil dibuat!
-          </p>
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn btn-primary mx-auto" onClick={() => navigate(`/job-orders`)}>Tutup</button>
-            </form>
-          </div>
-        </div>
-      </dialog>
-
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-2xl font-bold">Buat Job Order Baru</h3>
@@ -178,7 +190,6 @@ const JobOrderCreate = () => {
         </div>
         <div className="card bg-base-100 shadow-xl">
           <form onSubmit={handleCreate}>
-            {/* ...isi form tidak berubah... */}
             <div className="card-body">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Kolom Kiri */}
@@ -397,6 +408,15 @@ const JobOrderCreate = () => {
           </form>
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={modal.isOpen}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+      />
     </div>
   );
 };
