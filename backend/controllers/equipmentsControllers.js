@@ -35,7 +35,7 @@ const createEquipment = async (req, res) => {
         res.json(newEquipments.rows[0]);
     } catch (err) {
         console.error(err.message);
-        res.status(404).send("Gagal Menambahkan Data");
+        res.status(500).send("Gagal Menambahkan Data");
     }
 };
 
@@ -49,7 +49,7 @@ const updateEquipment = async (req, res) => {
         res.json("Equipment was updated!");
     } catch (err) {
         console.error(err.message);
-        res.status(404).send("Gagal Mengupdate Data");
+        res.status(500).send("Gagal Mengupdate Data");
     }
 };
 
@@ -60,7 +60,7 @@ const deleteEquipment = async (req, res) => {
         res.json("Equipment was deleted!")
     } catch (err) {
         console.error(err.message);
-        res.status(404).send("Gagal Menghapus Data");
+        res.status(500).send("Gagal Menghapus Data");
     }
 }
 
