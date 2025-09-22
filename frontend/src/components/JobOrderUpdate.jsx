@@ -41,49 +41,52 @@ const JobOrderUpdate = () => {
   const [keteranganEquipment, setKeteranganEquipment] = useState("");
 
   // Fetch data master (equipments & job types) saat komponen dimuat
-  useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [equipmentsRes, jobTypesRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/equipments`),
-          axios.get(`${API_BASE_URL}/job-types`),
-        ]);
-        setEquipments(equipmentsRes.data);
-        setJobTypes(jobTypesRes.data);
-      } catch (error) {
-        console.error("Gagal mengambil data master:", error);
-        alert("Gagal memuat data master. Pastikan server backend berjalan.");
-      }
-    };
-    fetchMasterData();
-  }, []);
+useEffect(() => {
+  const fetchData = async () => {
+    // Jangan jalankan jika tidak ada ID
+    if (!id) return;
 
-  // Fetch data Job Order yang akan di-update
-  useEffect(() => {
-    const fetchJobOrder = async () => {
-      if (!id) return;
-      try {
-        const response = await axios.get(`${API_BASE_URL}/job-orders/${id}`);
-        const data = response.data;
+    try {
+      // Jalankan semua request API secara bersamaan
+      const [equipmentsRes, jobTypesRes, jobOrderRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/equipments`),
+        axios.get(`${API_BASE_URL}/job-types`),
+        axios.get(`${API_BASE_URL}/job-orders/${id}`),
+      ]);
 
-        // Format tanggal sebelum dimasukkan ke state
-        setFormData({
-          ...data,
-          date_form: formatDateForInput(data.date_form),
-          tanggal_masuk: formatDateForInput(data.tanggal_masuk),
-          tanggal_keluar: formatDateForInput(data.tanggal_keluar),
-        });
+      // 1. Set state untuk master data (dropdown options)
+      setEquipments(equipmentsRes.data);
+      setJobTypes(jobTypesRes.data);
 
-        // Set keterangan equipment untuk ditampilkan
-        setKeteranganEquipment(data.keterangan_equipment || "");
-      } catch (error) {
-        console.error("Gagal mengambil data Job Order:", error);
-        alert("Gagal memuat data Job Order.");
-        navigate("/job-orders");
-      }
-    };
-    fetchJobOrder();
-  }, [id, navigate]);
+      // 2. Ambil data job order yang spesifik
+     const jobOrderData = jobOrderRes.data;
+
+     // 3. Set state untuk form, PASTIKAN ID MENJADI STRING
+     setFormData({
+       ...jobOrderData,
+       // ---- PERUBAHAN DI SINI ----
+       equipment_id: String(jobOrderData.equipment_id), // Paksa jadi String
+       job_type_id: String(jobOrderData.job_type_id), // Paksa jadi String
+       // --------------------------
+       date_form: formatDateForInput(jobOrderData.date_form),
+       tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
+       tanggal_keluar: formatDateForInput(jobOrderData.tanggal_keluar),
+     });
+
+     // 4. Set keterangan equipment untuk ditampilkan
+     setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
+
+      // 4. Set keterangan equipment untuk ditampilkan
+      setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
+    } catch (error) {
+      console.error("Gagal mengambil data:", error);
+      alert("Gagal memuat data untuk halaman edit. Mengarahkan kembali...");
+      navigate("/job-orders");
+    }
+  };
+
+  fetchData();
+}, [id, navigate]);
 
   // Handler untuk input biasa
   const handleInputChange = (e) => {
