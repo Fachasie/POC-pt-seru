@@ -99,9 +99,12 @@ const JobOrderUpdate = () => {
         setFormData({
           ...jobOrderData,
           // ---- PERUBAHAN DI SINI ----
-          equipment_id: String(jobOrderData.equipment_id),
-          job_type_id: String(jobOrderData.job_type_id),
-
+          equipment_id:
+            jobOrderData.equipment_id != null
+              ? String(jobOrderData.equipment_id)
+              : "",
+          job_type_id:
+            jobOrderData.job_type_id != null ? String(jobOrderData.job_type_id) : "",
           // --------------------------
           date_form: formatDateForInput(jobOrderData.date_form),
           tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
