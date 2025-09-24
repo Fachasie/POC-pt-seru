@@ -8,7 +8,7 @@ const getEquipments = async (req, res) => {
         const allEquipments = await pool.query("SELECT * FROM equipments");
         res.json(allEquipments.rows);
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         res.status(500).send("Server Error Gagal Mendapatkan Data");
     }
 };
@@ -21,7 +21,7 @@ const getEquipmentById = async (req, res) => {
         const Equipments = await pool.query("SELECT * FROM equipments WHERE id = $1", [id]);
         res.json(Equipments.rows[0]);
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         res.status(500).send("Server Error Gagal Mendapatkan Data");
     }
 };
@@ -34,7 +34,7 @@ const createEquipment = async (req, res) => {
         const newEquipments = await pool.query(`INSERT INTO equipments (no_lambung, keterangan_equipment) VALUES ($1, $2) RETURNING *`, [no_lambung, keterangan_equipment]);
         res.json(newEquipments.rows[0]);
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         res.status(500).send("Gagal Menambahkan Data");
     }
 };
@@ -48,7 +48,7 @@ const updateEquipment = async (req, res) => {
         await pool.query(`UPDATE equipments SET no_lambung = $1, keterangan_equipment = $2 where id = $3`, [no_lambung, keterangan_equipment, id]);
         res.json("Equipment was updated!");
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         res.status(500).send("Gagal Mengupdate Data");
     }
 };
@@ -59,7 +59,7 @@ const deleteEquipment = async (req, res) => {
         await pool.query("DELETE FROM equipments WHERE id = $1", [id]);
         res.json("Equipment was deleted!")
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         res.status(500).send("Gagal Menghapus Data");
     }
 }

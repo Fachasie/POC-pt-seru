@@ -7,7 +7,10 @@ const jobTypeRoutes = require('./routes/jobTypeRoutes')
 
 // Middleware
 app.use(express.json()); 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Izinkan permintaan dari semua origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Izinkan semua metode HTTP
+}));
 
 // Semua rute di jobOrderRoutes akan memiliki endpoint /api/job-orders
 app.use("/api/job-orders", jobOrderRoutes);
