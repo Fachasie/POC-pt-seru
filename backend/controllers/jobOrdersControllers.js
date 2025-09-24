@@ -10,7 +10,7 @@ const getJobOrders = async (req, res) => {
     res.json(allJobOrders.rows);
     
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send("Server Error Gagal Mendapatkan Data");
 
   }
@@ -30,7 +30,7 @@ const getJobOrderById = async (req, res) => {
     }
     res.json(jobOrder.rows[0]);
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send("Server Error Gagal Mendapatkan Data");
   }
 };
@@ -53,7 +53,7 @@ const createJobOrder = async (req, res) => {
     );
     res.json(newJobOrder.rows[0]);
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send("Gagal Menambahkan Data");
   }
 };
@@ -78,7 +78,7 @@ const updateJobOrder = async (req, res) => {
     );
     res.json("Job order was updated!");
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send("Gagal Mengupdate Data");
   }
 };
@@ -90,7 +90,7 @@ const deleteJobOrder = async (req, res) => {
     await pool.query("DELETE FROM job_order WHERE id = $1", [id]);
     res.json("Job order was deleted!");
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send("Server Error");
   }
 };

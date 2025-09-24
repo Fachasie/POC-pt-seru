@@ -1,0 +1,29 @@
+langkah ke 1
+ini untuk restor db ke dalam container docker
+# docker cp backend/sqlQuery/db_poc_dummy.sql postgres-db:/tmp/ && docker-compose exec db pg_restore -U postgres -d dmmy_dbpoc /tmp/db_poc_dummy.sql
+
+langkah tambahan
+ini untuk melihat isi table di dalam container docker
+# docker-compose exec db psql -U postgres -d dmmy_dbpoc -c "\d job_types"
+
+langkah tambahan 
+ini untuk mengINSERT langsung data ke dalam table di dalam container docker 
+# docker-compose exec db psql -U postgres -d dmmy_dbpoc -c "INSERT INTO job_types (jenis_pekerjaan) VALUES ('Penggantian Oli'), ('Penggantian Ban'), ('Service Berkala'), ('Perbaikan Body'), ('Penggantian Spare Part');"
+
+langkah alternatif kalau mau menambahkan query postgres sendiri
+ini untuk insert query.sql ke dalam container docker
+# docker cp backend/sqlQuery/insert_job_types.sql postgres-db:/tmp/ ; docker-compose exec db psql -U postgres -d dmmy_dbpoc -f /tmp/insert_job_types.sql
+
+
+# Backup
+docker-compose exec db pg_dump -U postgres dmmy_dbpoc > backup.sql
+
+# Restore (jika diperlukan)
+docker-compose exec -T db psql -U postgres dmmy_dbpoc < backup.sql
+
+
+# Data TETAP ADA setelah perintah ini
+docker-compose down
+
+# Data AKAN HILANG setelah perintah ini
+docker-compose down -v

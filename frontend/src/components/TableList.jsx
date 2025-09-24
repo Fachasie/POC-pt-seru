@@ -340,161 +340,112 @@ export default function TableList() {
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto shadow-lg rounded-lg">
-        <table className="table w-full bg-white">
-          <thead className="bg-gray-200">
-            <tr>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-sm"
-                  onChange={handleSelectAll}
-                  checked={
-                    sortedItems.length > 0 &&
-                    selectedJobOrders.length === sortedItems.length
-                  }
-                />
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("id")}
+      <div className="shadow-lg rounded-lg bg-white">
+        {/* Grid Header - Hidden on mobile, shown on sm and above */}
+        <div className="hidden sm:grid sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2 mb-2 bg-gray-200 p-3 rounded-t-lg font-semibold text-sm">
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-1">ID</div>
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-1">Job Order</div>
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-1">No Lambung</div>
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-1">Equipment</div>
+          <div className="hidden md:block md:col-span-1 lg:col-span-1">Jenis Pekerjaan</div>
+          <div className="hidden md:block md:col-span-1 lg:col-span-2">Uraian Masalah</div>
+          <div className="hidden lg:block lg:col-span-1">Tgl Masuk</div>
+          <div className="hidden lg:block lg:col-span-1">Tgl Keluar</div>
+          <div className="hidden md:block md:col-span-1 lg:col-span-1">Status</div>
+          <div className="hidden sm:block sm:col-span-1 md:col-span-1 lg:col-span-2">Action</div>
+        </div>
+
+        {/* Grid Content */}
+        <div className="bg-white rounded-b-lg shadow-lg">
+          {currentItems.length > 0 ? (
+            currentItems.map((jobOrder, index) => (
+              <div 
+                key={jobOrder.id}
+                className={`
+                  grid gap-2 p-3 items-center min-w-0
+                  ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} 
+                  hover:bg-gray-100 transition-colors duration-200
+                  border-b border-gray-200
+                  grid-cols-2 
+                  sm:grid-cols-4 
+                  md:grid-cols-8 
+                  lg:grid-cols-12
+                `}
               >
-                Id{getSortIndicator("id")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("date_form")}
-              >
-                Job Order{getSortIndicator("date_form")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("no_lambung")}
-              >
-                No Lambung{getSortIndicator("no_lambung")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("keterangan_equipment")}
-              >
-                Keterangan Equipment{getSortIndicator("keterangan_equipment")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("jenis_pekerjaan")}
-              >
-                Jenis Pekerjaan{getSortIndicator("jenis_pekerjaan")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("uraian_masalah")}
-              >
-                Uraian Masalah{getSortIndicator("uraian_masalah")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("tanggal_masuk")}
-              >
-                Tanggal Masuk{getSortIndicator("tanggal_masuk")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("tanggal_keluar")}
-              >
-                Tanggal Keluar{getSortIndicator("tanggal_keluar")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("status_mutasi")}
-              >
-                Status Mutasi{getSortIndicator("status_mutasi")}
-              </th>
-              <th
-                className="p-3 text-sm font-semibold tracking-wide text-left cursor-pointer"
-                onClick={() => requestSort("status")}
-              >
-                Status{getSortIndicator("status")}
-              </th>
-              <th className="p-3 text-sm font-semibold tracking-wide text-left">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.length > 0 ? (
-              currentItems.map((jobOrder, index) => (
-                <tr
-                  className={`${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-gray-100 transition-colors duration-200`}
-                  key={jobOrder.id}
-                >
-                  <td className="p-3 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-sm"
-                      checked={selectedJobOrders.includes(jobOrder.id)}
-                      onChange={(e) => handleSelectOne(e, jobOrder.id)}
-                    />
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">{jobOrder.id}</td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {formatDate(jobOrder.date_form)}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.no_lambung}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.keterangan_equipment}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.jenis_pekerjaan}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.uraian_masalah}
-                  </td>
-                  {/* --- START: PERUBAHAN TAMPILAN TANGGAL --- */}
-                  <td className="p-3 text-sm text-gray-700">
-                    {formatDate(jobOrder.tanggal_masuk)}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    {formatDate(jobOrder.tanggal_keluar)}
-                  </td>
-                  {/* --- END: PERUBAHAN TAMPILAN TANGGAL --- */}
-                  <td className="p-3 text-sm text-gray-700">
-                    {jobOrder.status_mutasi}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
+                {/* Mobile view - stacked layout */}
+                <div className="sm:col-span-1 md:col-span-1 lg:col-span-1 col-span-2 sm:col-span-1">
+                  <span className="sm:hidden font-semibold text-gray-600 text-xs">ID: </span>
+                  <span className="text-sm text-gray-700">{jobOrder.id}</span>
+                </div>
+                
+                <div className="sm:col-span-1 md:col-span-1 lg:col-span-1 col-span-2 sm:col-span-1">
+                  <span className="sm:hidden font-semibold text-gray-600 text-xs">Job Order: </span>
+                  <span className="text-sm text-gray-700">{formatDate(jobOrder.date_form)}</span>
+                </div>
+                
+                <div className="sm:col-span-1 md:col-span-1 lg:col-span-1 col-span-2 sm:col-span-1">
+                  <span className="sm:hidden font-semibold text-gray-600 text-xs">No Lambung: </span>
+                  <span className="text-sm text-gray-700">{jobOrder.no_lambung}</span>
+                </div>
+                
+                <div className="sm:col-span-1 md:col-span-1 lg:col-span-1 col-span-2 sm:col-span-1 min-w-0">
+                  <span className="sm:hidden font-semibold text-gray-600 text-xs">Equipment: </span>
+                  <span className="text-sm text-gray-700 block truncate overflow-hidden">{jobOrder.keterangan_equipment}</span>
+                </div>
+                
+                <div className="hidden md:block md:col-span-1 lg:col-span-1 min-w-0">
+                  <span className="text-sm text-gray-700 block truncate overflow-hidden">{jobOrder.jenis_pekerjaan}</span>
+                </div>
+                
+                <div className="hidden md:block md:col-span-1 lg:col-span-2 min-w-0">
+                  <span className="text-sm text-gray-700 block truncate overflow-hidden">{jobOrder.uraian_masalah}</span>
+                </div>
+                
+                <div className="hidden lg:block lg:col-span-1">
+                  <span className="text-sm text-gray-700">{formatDate(jobOrder.tanggal_masuk)}</span>
+                </div>
+                
+                <div className="hidden lg:block lg:col-span-1">
+                  <span className="text-sm text-gray-700">{formatDate(jobOrder.tanggal_keluar)}</span>
+                </div>
+                
+                <div className="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 min-w-0">
+                  <span className="sm:hidden font-semibold text-gray-600 text-xs">Status: </span>
+                  <span className={`
+                    text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap
+                    ${jobOrder.status === 'Complete' ? 'bg-green-100 text-green-800' : 
+                      jobOrder.status === 'On Progress' ? 'bg-yellow-100 text-yellow-800' : 
+                      jobOrder.status === 'Full Progress' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'}
+                  `}>
                     {jobOrder.status}
-                  </td>
-                  <td className="p-3 text-sm text-gray-700">
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="btn btn-warning btn-sm rounded-lg"
-                        onClick={() => navigate(`/job-order/${jobOrder.id}`)}
-                      >
-                        Detail
-                      </button>
-                      <button
-                        className="btn btn-accent btn-sm rounded-lg"
-                        onClick={() => handleDelete(jobOrder.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="12" className="p-4 text-center text-gray-500">
-                  No job orders found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  </span>
+                </div>
+                
+                <div className="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-2 flex gap-2 mt-2 sm:mt-0 items-center justify-end min-w-0">
+                   <button
+                    className="btn btn-warning btn-xs sm:btn-sm rounded-lg flex-1 sm:flex-initial whitespace-nowrap"
+                     onClick={() => navigate(`/job-order/${jobOrder.id}`)}
+                   >
+                     Detail
+                   </button>
+                   <button
+                    className="btn btn-accent btn-xs sm:btn-sm rounded-lg flex-1 sm:flex-initial whitespace-nowrap"
+                     onClick={() => handleDelete(jobOrder.id)}
+                   >
+                     Delete
+                   </button>
+                 </div>
+               </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              No job orders found.
+            </div>
+          )}
+        </div>
       </div>
+      
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 gap-2">
           <button

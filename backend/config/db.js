@@ -1,12 +1,28 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+// Prefer a single DATABASE_URL (used by docker-compose env interpolation)
+// Fallback to individual environment variables if DATABASE_URL is not provided.
+const connectionOptions = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL }
+  : {
+      user: process.env.DB_USER || process.env.POSTGRES_USER,
+      // default host 'db' matches the service name in docker-compose
+      host: process.env.DB_HOST || process.env.POSTGRES_HOST || 'db',
+      database: process.env.DB_DATABASE || process.env.POSTGRES_DB,
+      password: process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD,
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+    };
+
+const pool = new Pool(connectionOptions);
+
+// Log simple connection events to help debugging in Docker logs
+pool.on('connect', () => {
+  console.log('Postgres pool connected');
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle Postgres client', err);
 });
 
 module.exports = pool;
