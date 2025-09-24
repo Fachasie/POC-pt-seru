@@ -4,6 +4,8 @@ const cors = require('cors');
 const jobOrderRoutes = require('./routes/jobOrderRoutes');
 const equipmentRoutes = require('./routes/equipmentRoutes');
 const jobTypeRoutes = require('./routes/jobTypeRoutes')
+const workOrderRoutes = require('./routes/workOrdersRoutes');
+
 
 // Middleware
 app.use(express.json()); 
@@ -21,7 +23,7 @@ app.use("/api/equipments", equipmentRoutes);
 // Semua rute di equipmentRoutes akan memiliki endpoint /api/job-types
 app.use("/api/job-types", jobTypeRoutes);
 
-
+app.use("/api/work-orders", workOrderRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
