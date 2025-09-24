@@ -1,4 +1,3 @@
-// JobOrderCreate.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -122,7 +121,7 @@ const JobOrderCreate = () => {
     );
   };
 
-  // Helper: validasi tanggal (tanggal_keluar harus >= tanggal_masuk jika diisi)
+  // validasi tanggal (tanggal_keluar harus >= tanggal_masuk jika diisi)
   const validateDates = ({ tanggal_masuk, tanggal_keluar }) => {
     if (!tanggal_masuk) return { ok: true };
     if (!tanggal_keluar) return { ok: true };

@@ -246,7 +246,7 @@ export default function TableList() {
     return null;
   };
 
-  // --- START: FUNGSI BARU UNTUK FORMAT TANGGAL ---
+  // FUNGSI FORMAT TANGGAL
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     try {
@@ -265,7 +265,6 @@ export default function TableList() {
       return "-";
     }
   };
-  // --- END: FUNGSI BARU UNTUK FORMAT TANGGAL ---
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
@@ -453,14 +452,12 @@ export default function TableList() {
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.uraian_masalah}
                   </td>
-                  {/* --- START: PERUBAHAN TAMPILAN TANGGAL --- */}
                   <td className="p-3 text-sm text-gray-700">
                     {formatDate(jobOrder.tanggal_masuk)}
                   </td>
                   <td className="p-3 text-sm text-gray-700">
                     {formatDate(jobOrder.tanggal_keluar)}
                   </td>
-                  {/* --- END: PERUBAHAN TAMPILAN TANGGAL --- */}
                   <td className="p-3 text-sm text-gray-700">
                     {jobOrder.status_mutasi}
                   </td>

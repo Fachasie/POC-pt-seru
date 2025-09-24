@@ -1,7 +1,7 @@
-// JobOrderDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import NotificationModal from "./NotificationModal";
 
 const JOB_ORDER_API_URL = "http://localhost:3001/api/job-orders";
 const WORK_ORDER_API_URL = "http://localhost:3001/api/work-orders";
@@ -15,8 +15,11 @@ const JobOrderDetail = () => {
   const [workOrders, setWorkOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- [BARU] State untuk Modal dan Form ---
+  // State untuk Modal dan Form
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationType, setNotificationType] = useState("success");
   const [newWorkOrder, setNewWorkOrder] = useState({
     analisa: "",
     solusi: "",
@@ -25,7 +28,7 @@ const JobOrderDetail = () => {
     estimasi_kerja: "",
   });
 
-  // --- [BARU] Fungsi untuk mengambil data Work Order (dibuat terpisah agar bisa dipanggil ulang) ---
+  // Fungsi untuk mengambil data Work Order (dibuat terpisah agar bisa dipanggil ulang)
   const fetchWorkOrders = async () => {
     try {
       const response = await axios.get(WORK_ORDER_API_URL);
@@ -60,7 +63,7 @@ const JobOrderDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
-  // --- [BARU] Handler untuk input form ---
+  // Handler untuk input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewWorkOrder((prevState) => ({
@@ -69,7 +72,13 @@ const JobOrderDetail = () => {
     }));
   };
 
-  // --- [BARU] Handler untuk submit form ---
+  // Validasi tanggal
+  const validateDates = (startDate, endDate) => {
+    if (!startDate || !endDate) return true;
+    return new Date(startDate) < new Date(endDate);
+  };
+
+  // Handler untuk submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (
@@ -77,35 +86,57 @@ const JobOrderDetail = () => {
       !newWorkOrder.mekanik ||
       !newWorkOrder.mulai_kerja
     ) {
-      alert("Mohon isi Analisa, Mekanik, dan Tanggal Mulai Kerja.");
+      setNotificationMessage("Mohon isi Analisa, Mekanik, dan Tanggal Mulai Kerja.");
+      setNotificationType("error");
+      setShowNotification(true);
+      return;
+    }
+
+    // Validasi tanggal estimasi selesai jika diisi
+    if (newWorkOrder.estimasi_kerja && !validateDates(newWorkOrder.mulai_kerja, newWorkOrder.estimasi_kerja)) {
+      setNotificationMessage("Estimasi selesai tidak boleh lebih awal dari waktu mulai kerja.");
+      setNotificationType("error");
+      setShowNotification(true);
       return;
     }
 
     try {
       const dataToSubmit = {
         ...newWorkOrder,
-        jo_id: parseInt(id), // Nama diubah menjadi jo_id agar sesuai dengan API
+        jo_id: parseInt(id)
       };
       await axios.post(WORK_ORDER_API_URL, dataToSubmit);
-      alert("Work Order berhasil ditambahkan!");
-      setIsModalOpen(false); // Tutup modal
-      fetchWorkOrders(); // Ambil ulang data WO untuk memperbarui tabel
+      setNotificationMessage("Work Order berhasil ditambahkan!");
+      setNotificationType("success");
+      setShowNotification(true);
+      setIsModalOpen(false);
+      fetchWorkOrders();
     } catch (error) {
       console.error("Error submitting work order:", error);
-      alert("Gagal menambahkan Work Order.");
+      setNotificationMessage("Gagal menambahkan Work Order.");
+      setNotificationType("error");
+      setShowNotification(true);
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
-      try {
-        await axios.delete(`${JOB_ORDER_API_URL}/${id}`);
-        alert("Data berhasil dihapus!");
+    setNotificationMessage("Apakah Anda yakin ingin menghapus data ini?");
+    setNotificationType("warning");
+    setShowNotification(true);
+    
+    try {
+      await axios.delete(`${JOB_ORDER_API_URL}/${id}`);
+      setNotificationMessage("Data berhasil dihapus!");
+      setNotificationType("success");
+      setShowNotification(true);
+      setTimeout(() => {
         navigate("/job-orders");
-      } catch (error) {
-        console.error("Error deleting data:", error);
-        alert("Gagal menghapus data.");
-      }
+      }, 1500);
+    } catch (error) {
+      console.error("Error deleting data:", error);
+      setNotificationMessage("Gagal menghapus data.");
+      setNotificationType("error");
+      setShowNotification(true);
     }
   };
 
@@ -136,11 +167,18 @@ const JobOrderDetail = () => {
 
   return (
     <>
-      {" "}
-      {/* Menggunakan Fragment agar bisa menempatkan modal di level root */}
+      {/* Notification Modal - di taro lebih atas daripada work order modal */}
+      <div className="relative z-50">
+        <NotificationModal
+          isOpen={showNotification}
+          message={notificationMessage}
+          type={notificationType}
+          onClose={() => setShowNotification(false)}
+        />
+      </div>
+
       <div className="p-4 bg-gray-100 min-h-screen">
         <div className="max-w-4xl mx-auto">
-          {/* ... (Tombol Navigasi dan Detail Job Order Card tidak berubah) ... */}
           {/* Tombol Navigasi */}
           <div className="flex justify-between items-center mb-4">
             <button
@@ -258,7 +296,7 @@ const JobOrderDetail = () => {
             <div className="card-body">
               <div className="flex justify-between items-center mb-4 border-b pb-2">
                 <h3 className="text-xl font-bold">Daftar Work Order Terkait</h3>
-                {/* --- [BARU] Tombol untuk membuka modal --- */}
+                {/* Tombol untuk membuka modal */}
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setIsModalOpen(true)}
@@ -268,7 +306,7 @@ const JobOrderDetail = () => {
               </div>
               <div className="overflow-x-auto">
                 <table className="table table-zebra w-full">
-                  {/* ... (isi tabel tidak berubah) ... */}
+                  {/* isi tabel */}
                   <thead>
                     <tr>
                       <th>#</th>
@@ -305,10 +343,10 @@ const JobOrderDetail = () => {
           </div>
         </div>
       </div>
-      {/* --- [BARU] Komponen Modal --- */}
+      {/* Work Order Form Modal */}
       {isModalOpen && (
-        <div className="modal modal-open">
-          <div className="modal-box">
+        <div className="modal modal-open z-40">
+          <div className="modal-box relative">
             <h3 className="font-bold text-lg">Tambah Work Order Baru</h3>
             <button
               className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"

@@ -1,4 +1,3 @@
-// NotificationModal.jsx
 import React from "react";
 
 const NotificationModal = ({ 

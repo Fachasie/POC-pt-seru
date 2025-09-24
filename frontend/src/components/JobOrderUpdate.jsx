@@ -90,21 +90,19 @@ const JobOrderUpdate = () => {
         const allJobTypes = jobTypesRes.data;
         const jobOrderData = jobOrderRes.data;
 
-        // ======================= SOLUSI UNTUK EQUIPMENT =======================
+        // UNTUK EQUIPMENT
         const noLambungFromJobOrder = jobOrderData.no_lambung;
         const matchingEquipment = allEquipments.find(
           (eq) => eq.no_lambung === noLambungFromJobOrder
         );
         const targetEquipmentId = matchingEquipment ? matchingEquipment.id : "";
-        // ======================================================================
 
-        // ==================== SOLUSI UNTUK JENIS PEKERJAAN ====================
+        // UNTUK JENIS PEKERJAAN
         const jenisPekerjaanFromJobOrder = jobOrderData.jenis_pekerjaan;
         const matchingJobType = allJobTypes.find(
           (jt) => jt.jenis_pekerjaan === jenisPekerjaanFromJobOrder
         );
         const targetJobTypeId = matchingJobType ? matchingJobType.id : "";
-        // ======================================================================
 
         // Set state master data
         setEquipments(allEquipments);
@@ -164,7 +162,7 @@ const JobOrderUpdate = () => {
     );
   };
 
-  // Helper: validasi tanggal (tanggal_keluar harus >= tanggal_masuk jika diisi)
+  // validasi tanggal (tanggal_keluar harus >= tanggal_masuk jika diisi)
   const validateDates = ({ tanggal_masuk, tanggal_keluar }) => {
     if (!tanggal_masuk) return { ok: true };
     if (!tanggal_keluar) return { ok: true };
