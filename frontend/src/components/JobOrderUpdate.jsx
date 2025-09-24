@@ -77,44 +77,50 @@ const JobOrderUpdate = () => {
   // Fetch data master (equipments & job types) saat komponen dimuat
   useEffect(() => {
     const fetchData = async () => {
-      // Jangan jalankan jika tidak ada ID
       if (!id) return;
 
       try {
-        // Jalankan semua request API secara bersamaan
         const [equipmentsRes, jobTypesRes, jobOrderRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/equipments`),
           axios.get(`${API_BASE_URL}/job-types`),
           axios.get(`${API_BASE_URL}/job-orders/${id}`),
         ]);
 
-        // 1. Set state untuk master data (dropdown options)
-        setEquipments(equipmentsRes.data);
-        setJobTypes(jobTypesRes.data);
-
-        // 2. Ambil data job order yang spesifik
+        const allEquipments = equipmentsRes.data;
+        const allJobTypes = jobTypesRes.data;
         const jobOrderData = jobOrderRes.data;
 
-        // 3. Set state untuk form, PASTIKAN ID MENJADI STRING
+        // ======================= SOLUSI UNTUK EQUIPMENT =======================
+        const noLambungFromJobOrder = jobOrderData.no_lambung;
+        const matchingEquipment = allEquipments.find(
+          (eq) => eq.no_lambung === noLambungFromJobOrder
+        );
+        const targetEquipmentId = matchingEquipment ? matchingEquipment.id : "";
+        // ======================================================================
+
+        // ==================== SOLUSI UNTUK JENIS PEKERJAAN ====================
+        const jenisPekerjaanFromJobOrder = jobOrderData.jenis_pekerjaan;
+        const matchingJobType = allJobTypes.find(
+          (jt) => jt.jenis_pekerjaan === jenisPekerjaanFromJobOrder
+        );
+        const targetJobTypeId = matchingJobType ? matchingJobType.id : "";
+        // ======================================================================
+
+        // Set state master data
+        setEquipments(allEquipments);
+        setJobTypes(allJobTypes);
+
+        // Set state form dengan ID yang sudah kita temukan
         setFormData({
           ...jobOrderData,
-          // ---- PERUBAHAN DI SINI ----
-          equipment_id:
-            jobOrderData.equipment_id != null
-              ? String(jobOrderData.equipment_id)
-              : "",
-          job_type_id:
-            jobOrderData.job_type_id != null ? String(jobOrderData.job_type_id) : "",
-          // --------------------------
+          equipment_id: String(targetEquipmentId), // Gunakan ID Equipment yang ditemukan
+          job_type_id: String(targetJobTypeId), // Gunakan ID Jenis Pekerjaan yang ditemukan
+
           date_form: formatDateForInput(jobOrderData.date_form),
           tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
           tanggal_keluar: formatDateForInput(jobOrderData.tanggal_keluar),
         });
 
-        // 4. Set keterangan equipment untuk ditampilkan
-        setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
-
-        // 4. Set keterangan equipment untuk ditampilkan
         setKeteranganEquipment(jobOrderData.keterangan_equipment || "");
       } catch (error) {
         console.error("Gagal mengambil data:", error);
