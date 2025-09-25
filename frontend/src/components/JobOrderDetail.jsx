@@ -124,7 +124,7 @@ const JobOrderDetail = () => {
     try {
       const dataToSubmit = {
         ...newWorkOrder,
-        job_order_id: parseInt(id), // pastikan nama field sesuai dengan backend
+        jo_id: parseInt(id), // pastikan nama field sesuai dengan backend
       };
       await axios.post(WORK_ORDER_API_URL, dataToSubmit);
       setNotificationMessage("Work Order berhasil ditambahkan!");
@@ -429,7 +429,7 @@ const JobOrderDetail = () => {
                 <table className="table table-zebra w-full">
                   <thead>
                     <tr>
-                      <th>#</th>
+                      <th>ID</th>
                       <th>Analisa Kerusakan</th>
                       <th>Solusi</th>
                       <th>Mekanik</th>
