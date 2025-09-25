@@ -21,10 +21,12 @@ const JobOrderUpdate = () => {
   // State untuk menampung data dari API
   const [equipments, setEquipments] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
+  const [projectSites, setProjectSites] = useState([]);
+
 
   // State untuk form data, diinisialisasi kosong
   const [formData, setFormData] = useState({
-    project_site: "",
+    project_site_id: "",
     equipment_id: "",
     date_form: "",
     hm: "",
@@ -74,20 +76,21 @@ const JobOrderUpdate = () => {
     }
   };
 
-  // Fetch data master (equipments & job types) saat komponen dimuat
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return;
 
       try {
-        const [equipmentsRes, jobTypesRes, jobOrderRes] = await Promise.all([
+        const [equipmentsRes, jobTypesRes, projectSitesRes, jobOrderRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/equipments`),
           axios.get(`${API_BASE_URL}/job-types`),
+          axios.get(`${API_BASE_URL}/job-orders/project-sites`),
           axios.get(`${API_BASE_URL}/job-orders/${id}`),
         ]);
 
         const allEquipments = equipmentsRes.data;
         const allJobTypes = jobTypesRes.data;
+        const allProjectSites = projectSitesRes.data;
         const jobOrderData = jobOrderRes.data;
 
         // UNTUK EQUIPMENT
@@ -104,15 +107,24 @@ const JobOrderUpdate = () => {
         );
         const targetJobTypeId = matchingJobType ? matchingJobType.id : "";
 
+        // UNTUK PROJECT SITE
+        const projectSiteFromJobOrder = jobOrderData.project_site_nama;
+        const matchingProjectSite = allProjectSites.find(
+            (ps) => ps.nama === projectSiteFromJobOrder
+        );
+        const targetProjectSiteId = matchingProjectSite ? matchingProjectSite.id : "";
+
         // Set state master data
         setEquipments(allEquipments);
         setJobTypes(allJobTypes);
+        setProjectSites(allProjectSites);
 
         // Set state form dengan ID yang sudah kita temukan
         setFormData({
           ...jobOrderData,
           equipment_id: String(targetEquipmentId), // Gunakan ID Equipment yang ditemukan
           job_type_id: String(targetJobTypeId), // Gunakan ID Jenis Pekerjaan yang ditemukan
+          project_site_id: String(targetProjectSiteId),
 
           date_form: formatDateForInput(jobOrderData.date_form),
           tanggal_masuk: formatDateForInput(jobOrderData.tanggal_masuk),
@@ -201,7 +213,8 @@ const JobOrderUpdate = () => {
     try {
       // Bangun payload yang bersih dan konversi tipe sesuai ekspektasi backend
       const payload = {
-        project_site: formData.project_site,
+        project_site_id:
+          formData.project_site_id !== "" ? parseInt(formData.project_site_id, 10) : null,
         equipment_id:
           formData.equipment_id !== "" ? parseInt(formData.equipment_id, 10) : null,
         date_form: formData.date_form
@@ -264,14 +277,22 @@ const JobOrderUpdate = () => {
                     <div className="label">
                       <span className="label-text">Project Site</span>
                     </div>
-                    <input
-                      type="text"
-                      name="project_site"
-                      value={formData.project_site}
+                    <select
+                      name="project_site_id"
+                      value={formData.project_site_id}
                       onChange={handleInputChange}
-                      className="input input-bordered w-full"
+                      className="select select-bordered w-full"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        Pilih Project Site
+                      </option>
+                      {projectSites.map((site) => (
+                        <option key={site.id} value={site.id}>
+                          {site.nama}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="form-control w-full">

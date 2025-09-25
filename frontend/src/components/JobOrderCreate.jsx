@@ -20,10 +20,11 @@ const JobOrderCreate = () => {
   // State untuk menampung data dari API
   const [equipments, setEquipments] = useState([]);
   const [jobTypes, setJobTypes] = useState([]);
+  const [projectSites, setProjectSites] = useState([]);
 
   // State untuk form data dengan nilai default
   const [formData, setFormData] = useState({
-    project_site: "",
+    project_site_id: "",
     equipment_id: "",
     date_form: getCurrentDateTimeLocal(), // Otomatis terisi waktu sekarang
     hm: "",
@@ -76,12 +77,14 @@ const JobOrderCreate = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [equipmentsRes, jobTypesRes] = await Promise.all([
+        const [equipmentsRes, jobTypesRes, projectSitesRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/equipments`),
           axios.get(`${API_BASE_URL}/job-types`),
+          axios.get(`${API_BASE_URL}/job-orders/project-sites`),
         ]);
         setEquipments(equipmentsRes.data);
         setJobTypes(jobTypesRes.data);
+        setProjectSites(projectSitesRes.data);
       } catch (error) {
         console.error("Gagal mengambil data untuk form:", error);
         showModal(
@@ -197,14 +200,22 @@ const JobOrderCreate = () => {
                     <div className="label">
                       <span className="label-text">Project Site</span>
                     </div>
-                    <input
-                      type="text"
-                      name="project_site"
-                      value={formData.project_site}
+                    <select
+                      name="project_site_id"
+                      value={formData.project_site_id}
                       onChange={handleInputChange}
-                      className="input input-bordered w-full"
+                      className="select select-bordered w-full"
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        Pilih Project Site
+                      </option>
+                      {projectSites.map((site) => (
+                        <option key={site.id} value={site.id}>
+                          {site.nama}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="form-control w-full">

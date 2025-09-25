@@ -335,7 +335,7 @@ const JobOrderDetail = () => {
                     <strong className="block text-gray-500">
                       Project Site:
                     </strong>
-                    <span>{jobOrder.project_site || "-"}</span>
+                    <span>{jobOrder.project_site_nama || "-"}</span>
                   </p>
                   <p className="mb-2">
                     <strong className="block text-gray-500">No Lambung:</strong>
