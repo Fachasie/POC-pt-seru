@@ -5,6 +5,7 @@ const jobOrderRoutes = require('./routes/jobOrderRoutes');
 const equipmentRoutes = require('./routes/equipmentRoutes');
 const jobTypeRoutes = require('./routes/jobTypeRoutes')
 const workOrderRoutes = require('./routes/workOrdersRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 
 // Middleware
@@ -24,6 +25,9 @@ app.use("/api/equipments", equipmentRoutes);
 app.use("/api/job-types", jobTypeRoutes);
 
 app.use("/api/work-orders", workOrderRoutes);
+
+app.use("/api/users", userRoutes);
+
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

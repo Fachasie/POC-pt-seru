@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom";
 import { MdMenu } from "react-icons/md";
 import AppRoutes from './routes/AppRoutes';
-
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') ? localStorage.getItem('theme') : 'light');
+  const navigate = useNavigate();
 
   const handleToggleTheme = (e) => {
     if (e.target.checked) {
@@ -13,6 +14,11 @@ function App() {
     } else {
         setTheme('dark');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   useEffect(() => {
@@ -97,7 +103,7 @@ function App() {
                                     </a>
                                 </li>
                                 <li><a>Settings</a></li>
-                                <li><a>Logout</a></li>
+                                <li onClick={handleLogout}><a>Logout</a></li>
                             </ul>
                         </div>
                     </div>
