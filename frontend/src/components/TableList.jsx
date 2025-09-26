@@ -28,17 +28,18 @@ export default function TableList() {
   });
 
   useEffect(() => {
+    const fetchUsers = async () => {
+      if (!projectSite) return;
+      try {
+        const response = await axios.get(`${API_URL}?site=${projectSite}`);
+        setJobOrders(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
     fetchUsers();
   }, [projectSite]);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get(`${API_URL}?site=${projectSite}`);
-      setJobOrders(response.data);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
 
   useEffect(() => {
     let data = [...jobOrders];
