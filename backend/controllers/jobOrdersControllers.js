@@ -3,16 +3,47 @@ const pool = require('../config/db');
 // GET all job orders
 const getJobOrders = async (req, res) => {
   try {
+    const { site } = req.query;
 
-    const allJobOrders = await pool.query(
-        "SELECT jo.id, ps.nama AS project_site_nama, jo.date_form, jo.hm, jo.km, jo.uraian_masalah, jo.nama_operator, jo.tanggal_masuk, jo.tanggal_keluar, jo.status_mutasi, jo.status, eq.no_lambung, eq.keterangan_equipment, jt.jenis_pekerjaan FROM job_order AS jo JOIN equipments AS eq ON jo.equipment_id = eq.id JOIN job_types AS jt ON jo.job_type_id = jt.id JOIN project_site AS ps ON jo.project_site_id = ps.id"
-    );
+    let query = `
+      SELECT 
+        jo.id, 
+        ps.nama AS project_site_nama, 
+        jo.date_form, 
+        jo.hm, 
+        jo.km, 
+        jo.uraian_masalah, 
+        jo.nama_operator, 
+        jo.tanggal_masuk, 
+        jo.tanggal_keluar, 
+        jo.status_mutasi, 
+        jo.status, 
+        eq.no_lambung, 
+        eq.keterangan_equipment, 
+        jt.jenis_pekerjaan 
+      FROM 
+        job_order AS jo 
+      JOIN 
+        equipments AS eq ON jo.equipment_id = eq.id 
+      JOIN 
+        job_types AS jt ON jo.job_type_id = jt.id 
+      JOIN 
+        project_site AS ps ON jo.project_site_id = ps.id
+    `;
+
+    const queryParams = [];
+
+    if (site) {
+      query += ` WHERE ps.nama = $1`;
+      queryParams.push(site);
+    }
+
+    const allJobOrders = await pool.query(query, queryParams);
     res.json(allJobOrders.rows);
     
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error Gagal Mendapatkan Data");
-
   }
 };
 

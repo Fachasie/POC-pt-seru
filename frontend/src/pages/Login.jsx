@@ -40,7 +40,7 @@ const Login = () => {
         try {
             const response = await axios.post(`${API_BASE_URL}/users/login`, formData);
             localStorage.setItem('token', response.data.token);
-            showModal('success', 'Login Berhasil', 'Anda akan diarahkan ke halaman utama.', () => navigate('/'));
+            showModal('success', 'Login Berhasil', 'Anda akan diarahkan ke halaman utama.', () => navigate('/dashboard'));
         // eslint-disable-next-line no-unused-vars
         } catch (err) {
             showModal('error', 'Login Gagal', 'Username atau password salah.');

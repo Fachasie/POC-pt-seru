@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaFileExcel } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -10,6 +10,7 @@ const API_URL = "http://localhost:3001/api/job-orders";
 export default function TableList() {
   const [jobOrders, setJobOrders] = useState([]);
   const navigate = useNavigate();
+  const { projectSite } = useParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredJobOrders, setFilteredJobOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,11 +29,11 @@ export default function TableList() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [projectSite]);
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(API_URL);
+      const response = await axios.get(`${API_URL}?site=${projectSite}`);
       setJobOrders(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -295,7 +296,7 @@ export default function TableList() {
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start mb-6 w-full">
         <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">
-          Job Order (Head Office)
+          Job Order ({projectSite})
         </h2>
         <div className="flex flex-col sm:flex-row gap-2 items-center w-full sm:w-auto pr-2">
           {selectedJobOrders.length > 0 && (
