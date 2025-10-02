@@ -166,7 +166,7 @@ const JobOrderCreate = () => {
         "success",
         "Berhasil!",
         "Job Order berhasil dibuat!",
-        () => navigate(`/job-orders`)
+        () => navigate(-1)
       );
     } catch (err) {
       console.error("Error creating job order:", err);
